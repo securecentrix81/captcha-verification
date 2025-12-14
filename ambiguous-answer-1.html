@@ -1,0 +1,50 @@
+<style>
+.firehydrant {
+position: absolute;
+top: 0px;
+left: 50%;
+transform: translateX(-50%);
+}
+.controls {
+    margin: 10px 0;
+}
+button {
+    padding: 8px 16px;
+    margin-right: 10px;
+    cursor: pointer;
+    border: 2px solid #333;
+    background: white;
+    border-radius: 4px;
+    transition: 0.2s;
+}
+button:hover {
+	background-color: #dfd;
+    transition: 0.2s;
+    padding: 10px 18px;
+}
+.size-selector {
+    margin: 10px 0;
+}
+body {
+text-align:center;
+overflow:scroll;
+width: 100%;
+}
+</style>
+<h3>Which way is the person spinning?</h3>
+<img src="https://www.brainbashers.com/img_illusions20250916a/images/130.gif" width=150><br>
+<button id="left">Left</button><button id="right">Right</button>
+<script>
+let left = document.getElementById("left")
+let right = document.getElementById("right")
+left.addEventListener("click", (e) => {
+  window.parent.postMessage({type: "ambiguous-answer-1", pass: false, selection: "left"}, "*")
+  left.style["background-color"] = "#9f9"
+  right.style["background-color"] = ""
+})
+right.addEventListener("click", (e) => {
+  window.parent.postMessage({type: "ambiguous-answer-1", pass: false, selection: "right"}, "*")
+  right.style["background-color"] = "#9f9"
+  left.style["background-color"] = ""
+})
+</script>
