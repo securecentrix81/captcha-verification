@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<!--
+typing-test-1
+-->
+<html>
+<body>
+<style>
+.g {background-color: #88E788}
+.r {background-color:red}
+#overlayElement {
+position:absolute;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background-color:#ffffff;
+display:none;/**/
+z-index:9999999999;
+text-align:center;
+}
+#progressbarBackground {
+  background-color: black;
+  border-radius: 13px;
+  padding: 3px;
+  width: 50%;
+  height: 14px;
+}
+
+#progressbar {
+  background-color: black;
+  /* Adjust with JavaScript */
+  width:0;
+  height: 14px;
+  border-radius: 10px;
+}
+#main {
+height: 150px;
+overflow: scroll;
+}
+</style>
+<script>addEventListener("error",(e)=>{alert(e.message)})</script>
+<h2 style="text-align:center;font-size:21px;margin:0;display:inline;">Complete the typing test at <span id="targetWPMElement"></span>WPM</h2><br><sub style="display:inline;margin:0;padding:0">You may need to scroll down to view the full content</sub>
+<p id="main"></p>
+<div id="progressbarBackground">
+  <div id="progressbar"></div>
+</div>
+<pre id="output" style="font-size:9px"></pre>
+<div id="overlayElement"></div>
+
+<script>
+let mainElement = document.getElementById("main")
+let statsCounter = document.getElementById("output")
+let overlayElement = document.getElementById("overlayElement")
+let progressElement = document.getElementById("progressbar")
+let progressbarBackground = document.getElementById("progressbarbackground")
+let TARGETWPM = 120
+document.getElementById("targetWPMElement").innerText = TARGETWPM
+let tests = {
+"testing":"im not a robot",
+"easy": "Websites use anti-bot protection to prevent automated attacks like credential stuffing, fraud, and data scraping that threaten security and revenue. Bots strain servers, slow down legitimate users, inflate costs, and skew analytics. Defenses such as rate limiting and behavioral analysis keep sites fast and fair for real people while protecting data and brand reputation.",
+"medium":"Websites need anti-bot protection to safeguard security, revenue, and user trust. Automated traffic drives credential stuffing, account takeovers, payment fraud, fake sign-ups, spam, and abusive content, while scalper and scraper bots hoard inventory, distort prices, and harvest data. Bots also strain infrastructure-fueling DDoS and resource exhaustion-slowing real users and inflating bandwidth and compute costs, while corrupting analytics and A/B tests. Effective defenses (e.g., rate limiting, behavioral signals, anomaly detection, and threat intelligence) keep access fair and fast for humans, protect sensitive data and compliance commitments, and preserve a brand's reputation.",
+"hard":"Websites require robust anti-bot protection mechanisms to safeguard cybersecurity infrastructure, preserve revenue streams, and maintain stakeholder confidence. Automated algorithmic agents perpetrate credential stuffing attacks, orchestrate unauthorized account appropriations, execute fraudulent transactions, generate spurious registrations, disseminate unsolicited communications, and proliferate deleterious content. Opportunistic scraping and inventory monopolization bots systematically appropriate merchandise, manipulate pricing equilibria, and exfiltrate proprietary data while encumbering computational infrastructure-precipitating distributed denial-of-service incidents that degrade legitimate user performance and exponentially inflate operational expenditures. These mechanized intrusions additionally vitiate analytical metrics and compromise experimental testing integrity. Efficacious countermeasures encompassing rate limitation protocols, behavioral heuristics, anomaly detection algorithms, and threat intelligence aggregation ensure equitable access for authentic users, safeguard confidential information and regulatory compliance obligations, and perpetuate organizational reputational integrity."
+}
+let typingTest = tests.hard
+function initTest() {
+  mainElement.innerText = typingTest
+  let currentLetter = 0
+  let history = []
+  let start = 0
+  let accuracy = 0
+  let WPM = 0
+  let testFinished = false
+  addEventListener("keydown", (e) => {
+      if (testFinished)return
+e.preventDefault()
+      if (history.length === 0) start = Date.now()
+      let key = e.key
+      if (e.key === "Enter") {key = "\n"}
+      else if (e.key === "Tab") {key = "\t"}
+      else if (e.key === "Backspace") {
+          history.pop()
+      } else if (e.key.length > 1) return
+      if (e.key !== "Backspace") history.push(key)
+      let html = ""
+      let correct = 0
+      let total = 0
+      for (let i = 0; i < typingTest.length; ++i) {
+          if (i >= history.length) {
+              html += typingTest[i]
+              continue
+          }
+          let char = typingTest[i]
+          if (char === history[i]) {
+              html += `<span class="g">${char}</span>`
+              ++correct
+          } else {
+              html += `<span class="r">${char}</span>`
+          }
+          ++total
+      }
+      accuracy = correct/total
+      mainElement.innerHTML = html
+      if (history.length === typingTest.length) {
+        testFinished = true
+        overlayElement.style.display = "block"
+        let netwpm = Math.floor(WPM * accuracy)
+        overlayElement.innerHTML = `<h1>You have completed the typing test with ${netwpm} WPM</h1>`
+        if (netwpm > TARGETWPM) {
+          overlayElement.innerHTML += "<h2>Captcha Complete!</h2><p>Verify below</p>"
+          window.parent.postMessage({type: "typing-test-1", pass: true, targetwpm: TARGETWPM, netwpm: netwpm, accuracy: accuracy, wpm: WPM}, "*")
+        } else {
+          let btnElement = document.createElement("button")
+          btnElement.innerText = "Retry"
+          overlayElement.innerHTML += "<h2>You were so close! Only " + (TARGETWPM-netwpm) + " more WPM to go!</h2>"
+          
+          btnElement.addEventListener("click", (e) => {
+            initTest()
+            statsCounter.innerHTML = ""
+            progressElement.style.width = "0%"
+            overlayElement.style.display = "none"
+          })
+          overlayElement.appendChild(btnElement)
+          window.parent.postMessage({type: "typing-test-1", pass: false, targetwpm: TARGETWPM, netwpm: netwpm, accuracy: accuracy, wpm: WPM}, "*")
+        }
+      }
+  })
+  let interval = setInterval(() => {
+    if (testFinished){clearInterval(interval);return}
+    WPM = (history.length/((Date.now()-start)/1000/60))/5
+    function rgbLimit(x) {
+      return Math.max(0,Math.min(255,x))
+    }
+    if (history.length < 5) return
+    let netwpm = WPM*accuracy
+    progressElement.style.width = (netwpm/TARGETWPM*100)+"%"
+    let red = rgbLimit(1/TARGETWPM+255-(255/TARGETWPM*netwpm))
+    let green = rgbLimit(1/TARGETWPM+(netwpm))
+    let norm = Math.sqrt(red*red+green*green)
+    progressElement.style["background-color"] = `rgb(${red/norm*255},${green/norm*255},0)`
+    statsCounter.innerHTML = `Net WPM: ${WPM * accuracy}\nWPM: ${WPM}\nAccuracy: ${accuracy*100}%`
+  })
+}
+initTest()
+</script>
+</body>
+</html>
