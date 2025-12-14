@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body {
+      text-align: center;
+    }
+    button {
+      padding: 4px 8px;
+      cursor: pointer;
+      border: 2px solid #333;
+      background: white;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h3 style="margin: 5px;margin-bottom:0">Escape The Room(distance left: <span id="distancemeter">2048</span>)</h3>
+  <button id="btn" style="margin: 5px;">Click to move halfway towards to exit</button><br>
+  <canvas id="canvas" style="width: 200px; height: 200px; border-top: 5px solid #f00;border-left: 5px solid #f00;border-bottom: 5px solid #f00;border-right: 5px solid #0f0;"></canvas>
+  <script>
+    let canvas = document.getElementById("canvas")
+    let btn = document.getElementById("btn")
+    canvas.width = 2300
+    canvas.height = 2300
+    let keys = {}
+    addEventListener("keydown", (e) => {
+      keys[e.key.toLowerCase()] = true
+    })
+    addEventListener("keyup", (e) => {
+      keys[e.key.toLowerCase()] = false
+    })
+    let ctx = canvas.getContext("2d")
+    let x = (canvas.width-51)-2**11
+    let timesclicked = 0
+    ctx.fillStyle = "#000000"
+    ctx.beginPath()
+    ctx.arc(x, canvas.height/2, 50, 0, 6.29)
+    ctx.fill()
+    btn.addEventListener("click", () => {
+      ++timesclicked
+      ctx.clearRect(0,0,canvas.width,canvas.height)
+      x=(canvas.width-51)-2**(11-timesclicked)
+      if (timesclicked < 21) {
+      	distancemeter.innerText = 2**(11-timesclicked)
+      } else {
+        distancemeter.innerHTML = `2<sup>${11-timesclicked}</sup>`
+      }
+      ctx.fillStyle = "#000000"
+      ctx.beginPath()
+      ctx.arc(x, canvas.height/2, 50, 0, 6.29)
+      ctx.fill()
+      
+      ctx.clearRect(0,canvas.width-1,10,canvas.height)// impossible :D
+    })
+    let start = Date.now()
+    setInterval(() => {
+      if (Date.now() - start > 60000) {
+        ended = true
+        window.parent.postMessage({type: "escapeRoom-2", pass: false, start: start, ended: true}, "*")
+      }
+    }, 1000/60)
+    window.parent.postMessage({type: "escapeRoom-2", pass: false, start: start, ended: false}, "*")
+  </script>
+</body>
+</html>
