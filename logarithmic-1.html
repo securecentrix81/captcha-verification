@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://www.desmos.com/api/v1.11/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
+  <style>
+    body {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+<h2 id="h2">Drag the point to (-1,-1)</h2>
+  <div id="calculator" style="width: 200px; height: 200px;"></div>
+<script>Q1927356128374=true;addEventListener("error",(e)=>{if(Q1927356128374){Q1927356128374=false;alert(e.message)}})</script>
+
+  <script>
+    var elt = document.getElementById('calculator')
+    document.getElementById('h2').innerText = `Drag the point to (-${Math.floor(Math.random()*100)/100},-${Math.floor(Math.random()*100)/100})`
+    var calculator = Desmos.GraphingCalculator(elt, {expressions:false,settingsMenu:false,zoomButtons:false})
+    calculator.setState({
+  "version": 11,
+  "randomSeed": "81406a90348482b2b348cf4eb35e8c43",
+  "graph": {
+    "viewport": {
+      "xmin": 0.17150683682480156,
+      "ymin": 0.9398397069463378,
+      "xmax": 171506.83682480158,
+      "ymax": 6465.897940490464
+    },
+    "xAxisScale": "logarithmic",
+    "yAxisScale": "logarithmic",
+    "__v12ViewportLatexStash": {
+      "xmin": "0.17150683682480156",
+      "xmax": "171506.83682480158",
+      "ymin": "0.9398397069463378",
+      "ymax": "6465.897940490464"
+    }
+  },
+  "expressions": {
+    "list": [
+      {
+        "type": "expression",
+        "id": "2",
+        "color": "#2d70b3",
+        "latex": "\\left(a,b\\right)",
+        "showLabel": false,
+        "secret": true
+      },
+      {
+        "type": "expression",
+        "id": "4",
+        "color": "#6042a6",
+        "latex": "a="+(1+Math.random()*1000),
+        "hidden": true,
+        "secret": true
+      },
+      {
+        "type": "expression",
+        "id": "5",
+        "color": "#000000",
+        "latex": "b="+(1+Math.random()*1000),
+        "hidden": true,
+        "secret": true
+      },
+      {
+        "type": "expression",
+        "id": "6",
+        "color": "#c74440",
+        "latex": "d=\\sqrt{a^{2}+b^{2}}",
+        "secret": true
+      },
+      {
+        "type": "expression",
+        "id": "9",
+        "color": "#c74440",
+        "secret": true
+      }
+    ]
+  },
+  "includeFunctionParametersInRandomSeed": true,
+  "doNotMigrateMovablePointStyle": true
+})
+    addEventListener("keydown",(e)=>{if (e.key === "a")alert(JSON.stringify(calculator.getState()))})
+    let expressions = [
+      {
+        "type": "expression",
+        "id": "a2",
+        "color": "#2d70b3",
+        "latex": "\\left(a,b\\right)",
+        "showLabel": true,
+        "label": "Move this point to `(0,0)`. Current distance: ${d}",
+        "labelOrientation": "below"
+      },
+      {
+        "type": "expression",
+        "id": "a4",
+        "color": "#6042a6",
+        "latex": "a=100",
+      },
+      {
+        "type": "expression",
+        "id": "a5",
+        "color": "#000000",
+        "latex": "b=100"
+      },
+      {
+        "type": "expression",
+        "id": "a6",
+        "color": "#c74440",
+        "latex": "d=\\sqrt{a^{2}+b^{2}}"
+      }
+    ]
+    for (let expression in expressions) {
+    calculator.setExpression(expression)
+    }
+  </script>
+
+</body>
+</html>
