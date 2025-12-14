@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    #coin {
+    	position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: #eee;
+        width: 100px;
+        height: 100px;
+        text-align: center;
+        line-height: 100px;
+        font-size: 50px;
+        border-radius: 1000px;
+    }
+  </style>
+</head>
+<body>
+  <h3 style="text-align:center">Click to flip coin<br>Flip heads to pass</h3>
+  <div id="coin">T</div>
+  <script>
+    let totalRotations = 0
+    let ticks = 0
+    let exponentBase = 1.01
+    let post = false
+    let attempt = 0
+  	coin.addEventListener("click", (e) => {
+      post = true
+      ticks = 0
+      totalRotations = Math.floor(Math.random()*25)+5
+      exponentBase = 1.003 + Math.random()*(1.02-1.003)
+      window.parent.postMessage({type: "flipcoin-1", pass: false, attempts: attempt, spinStart: true}, "*")
+    })
+    
+    setInterval(() => {
+      let n = Math.ceil((360*totalRotations)-exponentBase**(Math.log10(360*totalRotations)/Math.log10(exponentBase)-ticks))
+      if (n%360 > 90 && n%360 < 270) {coin.innerText = "H"} else {coin.innerText = "T"}
+      coin.style = `transform: translate(-50%, -50%) rotateY(${n}deg)`
+      if (n > 360*totalRotations-20 && post) {
+        ++attempt
+      	window.parent.postMessage({type: "flipcoin-1", pass: false, attempts: attempt, spinStart: false}, "*")
+        post = false
+      }
+      ++ticks
+    },1000/60)
+  </script>
+</body>
+</html>
