@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<body>
+<style>
+#btn {
+  cursor: pointer;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-family: Arial, sans-serif;
+  background-color: #f9f9f9;
+  color: #333;
+  border: 2px solid #d3d3d3;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+#btn:hover {
+  background-color: #e8e8e8;
+  border-color: #c0c0c0;
+}
+</style>
+<script>addEventListener("error",(e)=>{alert(e.message)})</script>
+<p style="font-size:20px">Click "I'm not a robot" <span id="msg" style="font-weight:999">25</span> times to complete the captcha</p>
+<button id="btn">I'm not a robot</button><br><br>
+<p id="clicksmsg" style="display:inline">Clicks: 0/25<br>Human score: 0%<br>A Human score of 92.6% is required to pass</p>
+<script>
+let msg = document.getElementById("msg")
+let btn = document.getElementById("btn")
+let clicksmsg = document.getElementById("clicksmsg")
+let clicks = 0
+let targetclicks = 25
+btn.addEventListener("click", (e) => {
+  ++clicks
+  targetclicks = Math.max(25,Math.floor((1.03**clicks)+clicks+1))
+  msg.innerText = targetclicks
+  clicksmsg.innerText = `Clicks: ${clicks}/${targetclicks}\nHuman score: ${Math.floor(clicks/targetclicks*100*10)/10}%\nA human score of 92.6% is required to pass`
+})
+</script>
+</body>
+</html>
