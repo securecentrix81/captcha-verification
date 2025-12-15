@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        text-align: center;
+      }
+      #title {
+        
+      }
+      #input {
+        font-size: 1.2em;
+        width: 5em;
+      }
+      #button {
+        margin: 0 5px;
+        background-color: #22DD88;
+        border: 0;
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: 1.2em;
+        transition: 0.1s;
+      }
+      #button:hover {
+        background-color: #11CC77;
+        transition: 0.1s;
+      }
+      #guesses {
+        margin-top: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h3 id="title"></h3>
+    <div>
+      <input id="input" type="number" autocomplete="off" step=1><button id="button">Try</button>
+    </div>
+    <div id="guesses"></div>
+    <div id="results"></div>
+    <script>addEventListener("error",(e)=>{alert(e.message)})</script>
+    <script>
+      let title = document.getElementById("title")
+      let input = document.getElementById("input")
+      let button = document.getElementById("button")
+      let guessesElement = document.getElementById("guesses")
+      let resultsElement = document.getElementById("results")
+      
+      let CONFIG = {
+        number_max: 10**(Math.floor(Math.random()*6)+1),
+        number_min: 1,
+      }
+      CONFIG.guesses = Math.floor(Math.log2(CONFIG.number_max-CONFIG.number_min)-0.0000001)
+      title.innerText = `Guess the random number between ${CONFIG.number_min.toLocaleString()} and ${CONFIG.number_max.toLocaleString()}`
+      let number_min = CONFIG.number_min
+      let number_max = CONFIG.number_max
+      let guesses = CONFIG.guesses
+      input.setAttribute("min", CONFIG.number_min)
+      input.setAttribute("max", CONFIG.number_max)
+      guessesElement.innerText = `${guesses} guesses left`
+      function tryGuess(number) {
+        number = parseInt(number)
+        if (isNaN(number)) return
+        if (Math.floor(number) !== number) return
+        if (number < CONFIG.number_min) return
+        if (number > CONFIG.number_max) return
+        if (guesses <= 0) return
+        
+        input.value = ""
+        
+        let number_center = (number_max + number_min) / 2
+        let direction = 0
+        if (number > number_max) {
+          direction = -1
+        } else if (number < number_min) {
+          direction = 1
+        } else if (number > number_center) {
+          direction = -1
+          number_max = number
+        } else if (number < number_center) {
+          direction = 1
+          number_min = number
+        } else {
+          if (Math.random() < 0.5) {
+            number_min = number
+            direction = 1
+          } else {
+            number_max = number
+            direction = -1
+          }
+        }
+        
+        --guesses
+        guessesElement.innerText = guesses + " guesses left"
+        results.innerText = `The number is ${direction===1?"greater":"less"} than ${number.toLocaleString()}\n` + results.innerText
+        if (guesses <= 0) {
+          let numberResult = Math.floor(Math.random()*(number_max-number_min-2)+number_min+1)
+          results.innerText = `The number was ${numberResult.toLocaleString()}\n` + results.innerText
+          button.innerText = "Try again"
+          input.style.display = "none"
+          window.parent.postMessage({type:"guess-2", pass: false, number: numberResult})
+        }
+      }
+      input.addEventListener("keydown", (e) => {
+        if (e.key == "Enter") tryGuess(input.value)
+      })
+      button.addEventListener("click", (e) => {
+        if (guesses <= 0) {
+          input.style.display = "inline"
+          button.innerText = "Try"
+          number_min = CONFIG.number_min
+          number_max = CONFIG.number_max
+          guesses = CONFIG.guesses
+          guessesElement.innerText = `${guesses} guesses left`
+          results.innerText = ""
+          window.parent.postMessage({type:"clear_error"})
+        } else {
+          tryGuess(input.value)
+        }
+      })
+    </script>
+  </body>
+</html>
+
+
