@@ -204,7 +204,7 @@
           data: "click-1"
         },
         {
-          weight: 0.7,
+          weight: 0.9,
           data: "proof-1"
         },
       ]
@@ -355,6 +355,23 @@
         }
         return {type:captchaFile,html:HtmlService.createHtmlOutputFromFile(captchaFile).getContent()};
       }
+      function getRandomCaptcha(captchas) {
+        if (typeof captchas !== "object") return captchas
+        let totalWeights = 0
+        for (let weight of captchas) {
+          totalWeights += weight.weight
+        }
+        let selectedWeight = totalWeights*Math.random()
+        let currentWeight = 0
+        for (let weight of captchas) {
+          currentWeight += weight.weight
+          if (currentWeight >= selectedWeight) {
+            weight.weight /= 1.05
+            return getRandomCaptcha(weight.data)
+          }
+        }
+        alert("An error occurred. This should not happen. Actually, there is no way this can even happen. Why are you reading this? Thanks for wasting your time reading this message.")
+      }
       function loadIframeContent() {
         document.getElementById('captcha-frame').src = `data:text/html,<style>body,html{height:100%;margin:0}body{display:grid;place-items:center}h1{margin:0}</style><h1>Loading Captcha...</h1>`
         verifybtn.classList.add("disabled")
@@ -365,23 +382,8 @@
         errormessage.innerText = ""
         errormessage.style = ""
         onverify = () => {}
-        let iframeURL = validCaptchas
-        while (typeof iframeURL === "object") {
-          let totalWeights = 0
-          for (let weight of iframeURL) {
-            totalWeights += weight.weight
-          }
-          let selectedWeight = totalWeights*Math.random()
-          let currentWeight = 0
-          for (let weight of iframeURL) {
-            currentWeight += weight.weight
-            if (currentWeight >= selectedWeight) {
-              iframeURL = JSON.parse(JSON.stringify(weight.data))
-              break
-            }
-          }
-        }
         
+        let iframeURL = getRandomCaptcha(validCaptchas)
         if (iframeURL === "platformer-1") {
           document.getElementById("captcha-frame").style = "height: 100%; width: auto; aspect-ratio:1"
         } else if (iframeURL === "riggedplinko-1") {
