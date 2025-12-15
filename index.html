@@ -120,7 +120,86 @@
     </div>
     
     <script>
-      let validCaptchas = [["typing-test-1", "typing-test-2"], "no-mouse-1", "clicker-1", "selectAllPixels-1", "logarithmic-1", "ambiguous-answer-1", "enterIP-1", ["escapeRoom-1", "escapeRoom-2"],"guess-1", "flipcoin-1", "tic-tac-toe-1", "reaction-1", "platformer-1", "riggedplinko-1"]
+      let validCaptchas = [
+        {
+          weight: 1,
+          data: [
+            {
+              weight: 1,
+              data: "typing-test-1"
+            },
+            {
+              weight: 1,
+              data: "typing-test-2"
+            }
+          ]
+        }, 
+        {
+          weight: 1,
+          data: "no-mouse-1"
+        },
+        {
+          weight: 1,
+          data: "clicker-1"
+        },
+        {
+          weight: 1,
+          data: "selectAllPixels-1"
+        },
+        {
+          weight: 1,
+          data: "logarithmic-1"
+        },
+        {
+          weight: 1,
+          data: "ambiguous-answer-1"
+        },
+        {
+          weight: 1,
+          data: "enterIP-1"
+        },
+        {
+          weight: 1,
+          data: [
+            {
+              weight: 1,
+              data: "escapeRoom-1"
+            },
+            {
+              weight: 1,
+              data: "escapeRoom-2"
+            }
+          ]
+        },
+        {
+          weight: 1,
+          data: "guess-1"
+        },
+        {
+          weight: 1,
+          data: "flipcoin-1"
+        },
+        {
+          weight: 1,
+          data: "tic-tac-toe-1"
+        },
+        {
+          weight: 1,
+          data: "reaction-1"
+        }, 
+        {
+          weight: 1,
+          data: "platformer-1"
+        },
+        {
+          weight: 1,
+          data: "riggedplinko-1"
+        },
+        {
+          weight: 1,
+          data: "guess-2"
+        }
+      ]
       let verifybtn = document.getElementById('verify-btn')
       let regeneratebtn = document.getElementById('regenerate-btn')
       let errormessage = document.getElementById('errormessage')
@@ -130,6 +209,8 @@
       let timeouts = []
       window.addEventListener("message", (e) => {
         let data = e.data
+        if (data.type === "clear_error") {errormessage.innerText = ""}
+        if (data.type === "error_message") {errormessage.innerText = data.message}
         if (data.type === "typing-test-1" || data.type === "typing-test-2") {
           if (data.pass) {
             verifybtn.classList.remove("disabled")
@@ -255,6 +336,9 @@
           errormessage.innerText = data.message
           errormessage.style = "font-size: 9px"
         }
+        if (data.type === "guess-2") {
+          errormessage.innerText = "The number was " + data.number + ". Click \"Try again\" to try again."
+        }
       })
       function getIframeURL() {
         let captchaFile = validCaptchas[Math.floor(Math.random()*validCaptchas.length)]
@@ -275,8 +359,21 @@
         onverify = () => {}
         let iframeURL = validCaptchas
         while (typeof iframeURL === "object") {
-          iframeURL = iframeURL[Math.floor(Math.random()*iframeURL.length)]
+          let totalWeights = 0
+          for (let weight of iframeURL) {
+            totalWeights += eight.weight
+          }
+          let selectedWeight = totalWeights*Math.random()
+          let currentWeight = 0
+          for (let weight of iframeURL) {
+            currentWeight += weight.weight
+            if (currentWeight >= selectedWeight) {
+              iframeURL = JSON.parse(JSON.stringify(weight.data))
+            }
+          }
         }
+        alert(iframeURL)
+        
         if (iframeURL === "platformer-1") {
           document.getElementById('captcha-frame').style = "height: 100%; width: auto; aspect-ratio:1"
         } else if (iframeURL === "riggedplinko-1") {
