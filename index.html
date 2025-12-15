@@ -274,7 +274,7 @@
         errormessage.style = ""
         onverify = () => {}
         let iframeURL = validCaptchas
-        while (typeof type === "object") {
+        while (typeof iframeURL === "object") {
           iframeURL = iframeURL[Math.floor(Math.random()*iframeURL.length)]
         }
         if (iframeURL === "platformer-1") {
