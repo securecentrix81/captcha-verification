@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        padding: 0 10px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      textarea {
+        width: 100%;
+        flex: 1;
+        resize: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h3 id="title"></h3>
+    <textarea></textarea>
+    <script>
+    let random = ["Enter the proof of the Riemann Hypothesis.", "Solve the P vs NP problem", "Prove the Birch and Swinnerton-Dyer Conjecture", "Prove the Hodge Conjecture", "Solve the Navier–Stokes existence and smoothness problem", "Prove the Twin Prime Conjecture", "Can every even integer greater than 2 can be written as the sum of two prime numbers? Prove it."]
+    document.getElementById("title").innerText = random[Math.floor(Math.random()*random.length)]
+    </script>
+  </body>
+</html>
+
+
