@@ -275,7 +275,7 @@
         onverify = () => {}
         let iframeURL = validCaptchas
         while (typeof type === "object") {
-          iframeURL = iframeURL[Math.floor(Math.random()*type)]
+          iframeURL = iframeURL[Math.floor(Math.random()*iframeURL.length)]
         }
         if (iframeURL === "platformer-1") {
           document.getElementById('captcha-frame').style = "height: 100%; width: auto; aspect-ratio:1"
