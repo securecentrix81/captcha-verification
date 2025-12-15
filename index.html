@@ -366,7 +366,7 @@
         for (let weight of captchas) {
           currentWeight += weight.weight
           if (currentWeight >= selectedWeight) {
-            weight.weight /= 1.05
+            weight.weight /= 1.2
             return getRandomCaptcha(weight.data)
           }
         }
