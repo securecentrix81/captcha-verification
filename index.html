@@ -273,7 +273,10 @@
         errormessage.innerText = ""
         errormessage.style = ""
         onverify = () => {}
-        let type = data.type
+        let type = validCaptchas
+        while (typeof type === "object") {
+          type = type[Math.floor(Math.random()*type)]
+        }
         if (type === "platformer-1") {
           document.getElementById('captcha-frame').style = "height: 100%; width: auto; aspect-ratio:1"
         } else if (type === "riggedplinko-1") {
