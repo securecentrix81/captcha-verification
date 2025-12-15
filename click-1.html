@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <script>addEventListener("error",(e)=>{alert(e.message)})</script>
+    <script>
+      let canvas = document.getElementById("canvas")
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+      let ctx = canvas.getContext("2d")
+      let mouse = {x:canvas.width/2,y:canvas.width/4,down:false}
+      let settings = {xFlip:false,yFlip:false,sensitivity:1}
+      canvas.addEventListener("click", (e) => {
+        canvas.requestPointerLock()
+      })
+      class Button {
+        constructor(x,y, width, height, padding, text) {
+          this.x = x
+          this.y = y
+          this.width = width
+          this.height = height
+          this.padding = padding
+          this.text = text
+        }
+        render() {
+          ctx.fillStyle = "#00CC66"
+          let buttonPadding = 10
+          ctx.fillRect(this.x-this.width/2-this.padding/2,this.y-this.height/2-this.padding/2,this.width+this.padding,this.height+this.padding)
+          ctx.font = "40px Arial"
+          ctx.fillStyle = "#000000"
+          ctx.textBaseline = "middle"
+          ctx.textAlign = "center"
+          ctx.fillText(this.text,this.x,this.y)
+        }
+        checkCollision(x,y) {
+          let boxX = this.x-this.width/2-this.padding/2
+          let boxY = this.y-this.height/2-this.padding/2
+          let boxWidth = this.width+this.padding
+          let boxHeight = this.height+this.padding
+          return x > boxX && x < boxX + boxWidth && y > boxY && y < boxY + boxHeight
+        }
+      }
+      let button = new Button(canvas.width/2, canvas.height/2, 100, 40, 10, "Click")
+      ctx.fillStyle = "#000000"
+      ctx.beginPath()
+      ctx.arc(mouse.x, mouse.y, mouse.down?1000:10, 0, 6.29)
+      ctx.fill()
+      button.render()
+      addEventListener("mousemove", (e) => {
+        if (!document.pointerLockElement) return
+        mouse.x += e.movementX*(settings.xFlip?-1:1)
+        mouse.y += e.movementY*(settings.yFlip?-1:1)
+        if (mouse.x < 0) mouse.x = 0
+        if (mouse.y < 0) mouse.y = 0
+        if (mouse.x > canvas.width) mouse.x = canvas.width
+        if (mouse.y > canvas.width) mouse.y = canvas.width
+        ctx.clearRect(0,0,canvas.width,canvas.height)
+        ctx.fillStyle = "#000000"
+        ctx.beginPath()
+        ctx.arc(mouse.x, mouse.y, mouse.down?1000:10, 0, 6.29)
+        ctx.fill()
+        button.render()
+        if (button.checkCollision(mouse.x, mouse.y)) {
+          if (Math.abs(e.movementX) > Math.abs(e.movementY)) {
+            settings.xFlip = !settings.xFlip
+          } else {
+            settings.yFlip = !settings.yFlip
+          }
+          while (button.checkCollision(mouse.x, mouse.y)) {
+            let angle = Math.atan2(canvas.height/2-mouse.y,canvas.width/2-mouse.x)
+            mouse.x += -Math.cos(angle)
+            mouse.y += -Math.sin(angle)
+          }
+        }
+      }, {passive: true})
+    </script>
+  </body>
+</html>
+
+
