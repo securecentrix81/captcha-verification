@@ -28,6 +28,7 @@
     <script>
     let random = ["Enter the proof of the Riemann Hypothesis.", "Solve the P vs NP problem", "Prove the Birch and Swinnerton-Dyer Conjecture", "Prove the Hodge Conjecture", "Solve the Navier–Stokes existence and smoothness problem", "Prove the Twin Prime Conjecture", "Can every even integer greater than 2 can be written as the sum of two prime numbers? Prove it."]
     document.getElementById("title").innerText = random[Math.floor(Math.random()*random.length)]
+      window.parent.postMessage({type: "proof-1", pass: false}, "*")
     </script>
   </body>
 </html>
