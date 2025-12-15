@@ -361,7 +361,7 @@
         while (typeof iframeURL === "object") {
           let totalWeights = 0
           for (let weight of iframeURL) {
-            totalWeights += eight.weight
+            totalWeights += weight.weight
           }
           let selectedWeight = totalWeights*Math.random()
           let currentWeight = 0
