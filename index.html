@@ -202,7 +202,11 @@
         {
           weight: 0.9,
           data: "click-1"
-        }
+        },
+        {
+          weight: 0.7,
+          data: "proof-1"
+        },
       ]
       let verifybtn = document.getElementById('verify-btn')
       let regeneratebtn = document.getElementById('regenerate-btn')
@@ -342,6 +346,12 @@
         }
         if (data.type === "guess-2") {
           errormessage.innerText = "The number was " + data.number + ". Click \"Try again\" to try again."
+        }
+        if (data.type === "proof-1") {
+          verifybtn.classList.remove("disabled")
+          onverify = () => {
+            errormessage.innerHTML = "Your answer is incorrect. Tips to correct your answer: <ol><li>Check over your work</li><li>Explain your work</li><li>Stay on topic</li></ol>"
+          }
         }
       })
       function getIframeURL() {
