@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Square Arena - Level Based Shooter</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #111;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        width: 100vw;
+        color: white;
+        font-family: monospace;
+      }
+      #game-container {
+        width: 100vmin;
+        height: 100vmin;
+        position: relative;
+        background: #000;
+        box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      canvas {
+        width: 100%;
+        height: 100%;
+        image-rendering: pixelated;
+        display: block;
+      }
+      .ui-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 2%;
+        box-sizing: border-box;
+        text-shadow: 2px 2px 0px #000;
+      }
+      .screen-msg {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        pointer-events: auto;
+        background: rgba(0,0,0,0.8);
+        padding: 20px;
+        border: 2px solid #fff;
+      }
+      button {
+        background: #fff;
+        color: #000;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        font-weight: bold;
+        margin-top: 10px;
+      }
+      button:hover {
+        background: #ccc;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div id="game-container">
+      <canvas id="gameCanvas" width="1000" height="1000"></canvas>
+
+      <div class="ui-overlay">
+        <div class="flex justify-between items-start text-[3vmin]">
+          <div id="hp-bar">HP: 100</div>
+          <div id="level-display">Level: 1</div>
+        </div>
+      </div>
+
+      <div id="start-screen" class="screen-msg w-[80%] max-w-[400px]">
+        <h1 class="text-[6vmin] mb-4 font-bold leading-tight">SQUARE ARENA</h1>
+        <p class="mb-4 text-[3vmin]">WASD to Move<br>CLICK or SPACE to Shoot</p>
+        <p class="mb-4 text-[2vmin] opacity-70">Optimized for any square display</p>
+        <button onclick="startGame()" class="text-[4vmin] px-[6vmin] py-[2vmin]">START</button>
+      </div>
+
+      <div id="game-over-screen" class="screen-msg hidden">
+        <h1 class="text-2xl mb-4 font-bold">GAME OVER</h1>
+        <p id="final-stats" class="mb-4"></p>
+        <button onclick="restartGame()">RETRY</button>
+      </div>
+
+      <div id="win-screen" class="screen-msg hidden">
+        <h1 class="text-2xl mb-4 font-bold">YOU WIN!</h1>
+        <p class="mb-4 text-sm">All levels cleared!</p>
+        <button onclick="restartGame()">PLAY AGAIN</button>
+      </div>
+    </div>
+
+    <script>addEventListener("error",(e)=>{alert(e.message)})</script>
+    <script>
+      /**
+         * LEVEL CONFIGURATION
+         * Customize your levels here!
+         */
+      /**
+         * LEVEL CONFIGURATION
+         * Each level has:
+         * name: Title of the enemy
+         * enemyHp: Total health
+         * enemySpeed: Movement speed
+         * enemySize: Radius of the enemy square
+         * enemyColor: Hex color
+         * enemyBulletSpeed: How fast their shots travel
+         * enemyShootRate: Milliseconds between shots
+         * playerSpeed: How fast you move this level
+         * aiType: 'side-to-side', 'follow', or 'circle'
+         */
+      const LEVELS = [
+        {
+          name: "Introduction",
+          enemyHp: 5,
+          enemySpeed: 2.5,
+          enemySize: 40,
+          enemyColor: "#4ade80", 
+          enemyBulletSpeed: 2,
+          enemyShootRate: 2500,
+          playerSpeed: 10,
+          aiType: 'side-to-side',
+          bulletDamage: 0.1,
+          delay: 0,
+        },
+        {
+          name: "Level 1",
+          enemyHp: 20,
+          enemySpeed: 2.5,
+          enemySize: 40,
+          enemyColor: "#4ade80", 
+          enemyBulletSpeed: 2,
+          enemyShootRate: 1500,
+          playerSpeed: 10,
+          aiType: 'side-to-side',
+          bulletDamage: 0.5,
+          delay: 1000,
+        },
+        {
+          name: "Level 2",
+          enemyHp: 40,
+          enemySpeed: 2.5,
+          enemySize: 40,
+          enemyColor: "#4ade80", 
+          enemyBulletSpeed: 3,
+          enemyShootRate: 1000,
+          playerSpeed: 10,
+          aiType: 'follow',
+          bulletDamage: 0.5,
+          delay: 1000,
+        },
+        {
+          name: "Level 3",
+          enemyHp: 50,
+          enemySpeed: 2.5,
+          enemySize: 40,
+          enemyColor: "#4ade80", 
+          enemyBulletSpeed: 3,
+          enemyShootRate: 500,
+          playerSpeed: 10,
+          aiType: 'circle',
+          bulletDamage: 0.5,
+          delay: 3000,
+        },
+        {
+          name: "Level 4",
+          enemyHp: 1,
+          enemySpeed: 10,
+          enemySize: 10,
+          enemyColor: "#4ade80", 
+          enemyBulletSpeed: 9,
+          enemyShootRate: 100,
+          playerSpeed: 10,
+          aiType: 'circle',
+          bulletDamage: 0.2,
+          delay: 5000,
+        },
+        {
+          name: "Level 5",
+          enemyHp: 200,
+          enemySpeed: 1,
+          enemySize: 40,
+          enemyColor: "#4ade80", 
+          enemyBulletSpeed: 5,
+          enemyShootRate: 500,
+          playerSpeed: 10,
+          aiType: 'follow',
+          bulletDamage: 2,
+          delay: 2000,
+        },
+        {
+          name: "Easy Boss Level",
+          enemyHp: 100,
+          enemySpeed: 3,
+          enemySize: 60,
+          enemyColor: "#4ade80", 
+          enemyBulletSpeed: 11,
+          enemyShootRate: 2000,
+          playerSpeed: 10,
+          maxHP: 100,
+          aiType: 'follow',
+          bulletDamage: 0.01,
+          timesDied: 0,
+          unfairLaser: 0,
+          tick: (enemy, player, timeInLevel) => {
+            if (enemy.config.timesDied > 0) {
+              let chanceBooster = 1+enemy.config.timesDied/20+(player.hp>=100?10:0)+(player.hp>=50?1:0)+(enemy.config.timesDied>20?10:0)+(enemy.config.timesDied > 100?1000000000000000000000:0)
+              if (Math.random() < 0.0007*chanceBooster) {
+                bossAttacks.blast(45, 1000, 10, 25, enemy.config.bulletDamage)
+                bossAttacks.blast(0, 100, 10, 25, 10*enemy.config.bulletDamage)
+              }
+              if (Math.random() < 0.0005*chanceBooster) {
+                bossAttacks.blast(360, 10000, 5, 25, enemy.config.bulletDamage)
+              }
+              if (Math.random() < 0.0001*chanceBooster) {
+                bossAttacks.blast(360, 50000, 5, 25, 2*enemy.config.bulletDamage)
+              }
+              if (enemy.config.unfairLaser > 0) {
+                bossAttacks.blast(0, 100, 5, 250, enemy.config.bulletDamage)
+                screenShakeIntensity += 5
+              }
+              if (Math.random() < 0.0003*chanceBooster) enemy.config.unfairLaser = player.hp<40?50:(player.hp<70?80:150)
+              enemy.config.unfairLaser -= 1
+              if (Math.random() < 0.002*chanceBooster) {
+                const shootAngle = Math.atan2(player.y - enemy.y, player.x - enemy.x)+2*Math.PI*Math.random();
+                for (let i = 0; i < 500; ++i) {
+                  enemy.bullets.push({
+                    x: enemy.x,
+                    y: enemy.y,
+                    vx: Math.cos(shootAngle) * 2,
+                    vy: Math.sin(shootAngle) * 2,
+                    radius: 50,
+                    damage: 10/500,
+                    color: '#ff0000'
+                  });
+                }
+              }
+            }
+            if (enemy.config.timesDied > 100) {
+              enemy.config.unfairLaser = 1000
+            }
+            
+            if (enemy.hp < 10) {
+              enemy.hp = enemy.config.maxHP
+              enemy.config.delay = 0
+              enemy.config.timesDied += 1
+              player.hp = Math.min(100,player.hp + 25)
+              if (enemy.config.timesDied === 1) {
+                bossAttacks.blast(0, 1, 25, 25, 100)
+                bossAttacks.blast(45/4, 5000, 5, 25, enemy.config.bulletDamage)
+                bossAttacks.blast(45/4, 5000, 5, 25, enemy.config.bulletDamage)
+                bossAttacks.blast(45/2, 5000, 5, 25, enemy.config.bulletDamage)
+                bossAttacks.blast(45, 5000, 5, 25, enemy.config.bulletDamage)
+                bossAttacks.blast(360, 500, 5, 25, enemy.config.bulletDamage)
+              }
+            }
+          },
+          delay: 1000000000000,
+        },
+        {
+          name: "Easy Boss Level(for hackers)",
+          enemyHp: 1/0,
+          enemySpeed: 25,
+          enemySize: 80,
+          enemyColor: "#4ade80", 
+          enemyBulletSpeed: 11,
+          enemyShootRate: 0,
+          playerSpeed: 10,
+          aiType: 'follow',
+          bulletDamage: 1/0,
+          tick: (enemy, player, timeInLevel) => {
+            if (player.bullets.length > 0 || timeInLevel > 10000) {
+              bossAttacks.blast(45,50000,1,1300,1/0)
+              bossAttacks.blast(360,10000,1,1300,1/0)
+              screenShakeIntensity += 1000000
+            }
+          },
+          delay: 0,
+        },
+      ];
+      
+      let bossAttacks = {
+        blast: function(angle, amount, speedMin, speedMax, damage) {
+          for (let i = 0; i < amount; ++i) {
+            const shootAngle = Math.atan2(player.y - enemy.y, player.x - enemy.x)+2*Math.PI*(Math.random()*angle-angle/2)/360;
+            let speed = Math.random()*(speedMax-speedMin)+speedMin
+            enemy.bullets.push({
+              x: enemy.x,
+              y: enemy.y,
+              vx: Math.cos(shootAngle) * speed,
+              vy: Math.sin(shootAngle) * speed,
+              radius: 8,
+              damage: damage,
+              color: '#ff0000'
+            });
+          }
+        }
+      }
+      
+
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+      const WIDTH = 1000;
+      const HEIGHT = 1000;
+
+      let gameState = 'START'; // START, PLAYING, GAMEOVER, WIN
+      let currentLevel = 0;
+      let screenShakeIntensity = 0
+      let player = {
+        x: WIDTH / 2,
+        y: HEIGHT * 0.8,
+        size: 30,
+        hp: 100,
+        maxHp: 100,
+        speed: 5,
+        damage: 1,
+        bulletSpeed: 25,
+        bullets: []
+      };
+      let enemy = null;
+      let keys = {};
+      let mousePos = { x: WIDTH/2, y: HEIGHT/2 };
+      let lastEnemyShot = 0;
+      let lastPlayerShot = 0;
+      const PLAYER_SHOT_COOLDOWN = 50;
+      let particles = [];
+
+      // Input Handling
+      window.addEventListener('keydown', e => keys[e.code] = true);
+      window.addEventListener('keyup', e => keys[e.code] = false);
+      canvas.addEventListener('mousemove', e => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = WIDTH / rect.width;
+        const scaleY = HEIGHT / rect.height;
+        mousePos.x = (e.clientX - rect.left) * scaleX;
+        mousePos.y = (e.clientY - rect.top) * scaleY;
+      });
+      canvas.addEventListener('mousedown', () => { isMouseDown = true; });
+      window.addEventListener('mouseup', () => { isMouseDown = false; });
+
+      let levelStartTime = 0; 
+
+      function initLevel(index) {
+        const config = LEVELS[index];
+        levelStartTime = Date.now(); // Reset timer on new level
+        player.hp = player.maxHp;
+        player.speed = config.playerSpeed;
+        player.bullets = [];
+
+        enemy = {
+          x: WIDTH / 2,
+          y: 200,
+          size: config.enemySize,
+          hp: config.enemyHp,
+          maxHp: config.enemyHp,
+          speed: config.enemySpeed,
+          color: config.enemyColor,
+          bullets: [],
+          config: config,
+          vx: config.enemySpeed,
+          vy: 0
+        };
+
+        document.getElementById('level-display').innerText = `${config.name}`;
+        updateUI();
+      }
+
+      function startGame() {
+        document.getElementById('start-screen').classList.add('hidden');
+        gameState = 'PLAYING';
+        initLevel(currentLevel);
+        requestAnimationFrame(gameLoop);
+      }
+
+      function restartGame() {
+        document.getElementById('game-over-screen').classList.add('hidden');
+        document.getElementById('win-screen').classList.add('hidden');
+        startGame();
+      }
+
+      function shootBullet() {
+        const now = Date.now();
+        if (now - lastPlayerShot < PLAYER_SHOT_COOLDOWN) return;
+        lastPlayerShot = now;
+
+        // Angle towards mouse
+        const angle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x);
+        player.bullets.push({
+          x: player.x,
+          y: player.y,
+          vx: Math.cos(angle) * player.bulletSpeed,
+          vy: Math.sin(angle) * player.bulletSpeed,
+          radius: 8,
+          color: '#60a5fa'
+        });
+      }
+
+      function enemyShoot() {
+        const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+        enemy.bullets.push({
+          x: enemy.x,
+          y: enemy.y,
+          vx: Math.cos(angle) * enemy.config.enemyBulletSpeed,
+          vy: Math.sin(angle) * enemy.config.enemyBulletSpeed,
+          radius: 8,
+          damage: enemy.config.bulletDamage,
+          color: '#f87171'
+        });
+      }
+
+      function createParticles(x, y, color, count = 10) {
+        for(let i=0; i<count; i++) {
+          particles.push({
+            x, y,
+            vx: (Math.random() - 0.5) * 10,
+            vy: (Math.random() - 0.5) * 10,
+            life: 1.0,
+            color: color
+          });
+        }
+      }
+
+      function updateUI() {
+        document.getElementById('hp-bar').innerText = `HP: ${Math.max(0, Math.ceil(player.hp*100)/100)}\nEnemy HP: ${Math.max(0, Math.ceil(enemy.hp*100)/100)}`;
+      }
+
+      function update() {
+        if (gameState !== 'PLAYING') return;
+
+        const now = Date.now();
+        const timeInLevel = now - levelStartTime;
+        const SPAWN_DELAY = enemy.config.delay;
+        // Shooting held?
+        if (keys['Space'] || isMouseDown) {
+          shootBullet();
+        }
+
+        // Player Movement
+        if (keys['KeyW'] || keys['ArrowUp']) player.y -= player.speed;
+        if (keys['KeyS'] || keys['ArrowDown']) player.y += player.speed;
+        if (keys['KeyA'] || keys['ArrowLeft']) player.x -= player.speed;
+        if (keys['KeyD'] || keys['ArrowRight']) player.x += player.speed;
+
+        // Constrain Player
+        player.x = Math.max(player.size, Math.min(WIDTH - player.size, player.x));
+        player.y = Math.max(player.size, Math.min(HEIGHT - player.size, player.y));
+
+        // Only allow AI movement and shooting if the delay has passed
+        
+        if (timeInLevel > SPAWN_DELAY) {
+          // Enemy AI Logic
+          const ai = enemy.config.aiType;
+          if (ai === 'side-to-side') {
+            enemy.x += enemy.vx;
+            if (enemy.x > WIDTH - enemy.size || enemy.x < enemy.size) {
+              enemy.vx *= -1;
+            }
+          } else if (ai === 'follow') {
+            const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+            enemy.x += Math.cos(angle) * enemy.speed;
+            enemy.y += Math.sin(angle) * enemy.speed;
+            const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+            if (dist < 200) {
+              enemy.x -= Math.cos(angle) * (enemy.speed + 0.1);
+              enemy.y -= Math.sin(angle) * (enemy.speed + 0.1);
+            }
+          } else if (ai === 'circle') {
+            const time = Date.now() / 1000;
+            enemy.x = WIDTH/2 + Math.cos(time * 2) * 300;
+            enemy.y = HEIGHT/3 + Math.sin(time * 2) * 200;
+          }
+
+          // Enemy Shooting
+          if (now - lastEnemyShot > enemy.config.enemyShootRate) {
+            enemyShoot();
+            lastEnemyShot = now;
+          }
+        } else {
+          // Optional: Keep lastEnemyShot updated during delay so they don't 
+          // instantly fire a burst the millisecond they spawn
+          lastEnemyShot = now; 
+        }
+        // 2. Wrap AI and Enemy Shooting in delay check
+        if (timeInLevel > SPAWN_DELAY) {
+          const ai = enemy.config.aiType;
+          // ... existing AI Logic (side-to-side, follow, circle) ...
+
+          if (now - lastEnemyShot > enemy.config.enemyShootRate) {
+            enemyShoot();
+            lastEnemyShot = now;
+          }
+        }
+        if (enemy.config.tick) enemy.config.tick(enemy, player, timeInLevel);
+
+        // Bullet Movement & Collision
+        player.bullets.forEach((b, i) => {
+          b.x += b.vx; b.y += b.vy;
+          // Hit enemy?
+          const dist = Math.hypot(b.x - enemy.x, b.y - enemy.y);
+          if (dist < enemy.size + b.radius) {
+            enemy.hp -= player.damage;
+            createParticles(b.x, b.y, enemy.color, 5);
+            player.bullets.splice(i, 1);
+            updateUI();
+          }
+          // Out of bounds
+          else if (b.x < 0 || b.x > WIDTH || b.y < 0 || b.y > HEIGHT) {
+            player.bullets.splice(i, 1);
+          }
+        });
+
+        enemy.bullets.forEach((b, i) => {
+          b.x += b.vx; b.y += b.vy;
+          const dist = Math.hypot(b.x - player.x, b.y - player.y);
+          if (dist < player.size + b.radius) {
+            player.hp -= b.damage; // Use config damage
+            createParticles(b.x, b.y, '#fff', 5);
+            enemy.bullets.splice(i, 1);
+            updateUI();
+            screenShakeIntensity += 0.1
+            screenShakeIntensity = Math.max(screenShakeIntensity,5)
+          }
+          else if (b.x < 0 || b.x > WIDTH || b.y < 0 || b.y > HEIGHT) {
+            enemy.bullets.splice(i, 1);
+          }
+        });
+
+        // Particles
+        particles.forEach((p, i) => {
+          p.x += p.vx; p.y += p.vy;
+          p.life -= 0.02;
+          if (p.life <= 0) particles.splice(i, 1);
+        });
+
+        // Win/Loss Condition
+        if (player.hp <= 0) {
+          gameState = 'GAMEOVER';
+          document.getElementById('final-stats').innerText = `You fell on Level ${currentLevel + 1}`;
+          document.getElementById('game-over-screen').classList.remove('hidden');
+          screenShakeIntensity += 1000
+        }
+
+        if (enemy.hp <= 0) {
+          createParticles(enemy.x, enemy.y, enemy.color, 30);
+          currentLevel++;
+          if (currentLevel >= LEVELS.length) {
+            gameState = 'WIN';
+            document.getElementById('win-screen').classList.remove('hidden');
+          } else {
+            initLevel(currentLevel);
+          }
+        }
+      }
+
+      function draw() {
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+        // Grid background
+        ctx.strokeStyle = '#222';
+        ctx.lineWidth = 2;
+        for(let i=0; i<=WIDTH; i+=100) {
+          ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i, HEIGHT); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(WIDTH, i); ctx.stroke();
+        }
+
+        // Draw Particles
+        particles.forEach(p => {
+          ctx.globalAlpha = p.life;
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x - 4, p.y - 4, 8, 8);
+        });
+        ctx.globalAlpha = 1.0;
+
+        // Draw Enemy
+        if (enemy) {
+          const isSpawning = (Date.now() - levelStartTime) < 1500;
+          ctx.globalAlpha = isSpawning ? 0.5 : 1.0; // Fade enemy during delay
+          ctx.fillStyle = enemy.color;
+          ctx.fillRect(enemy.x - enemy.size, enemy.y - enemy.size, enemy.size * 2, enemy.size * 2);
+          ctx.globalAlpha = 1.0;
+
+          // Enemy HP Bar
+          ctx.fillStyle = '#333';
+          ctx.fillRect(enemy.x - 40, enemy.y - enemy.size - 20, 80, 10);
+          ctx.fillStyle = '#f00';
+          ctx.fillRect(enemy.x - 40, enemy.y - enemy.size - 20, 80 * (enemy.hp / enemy.maxHp), 10);
+        }
+
+        // Draw Player
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw Bullets
+        player.bullets.forEach(b => {
+          ctx.fillStyle = b.color;
+          ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI*2); ctx.fill();
+        });
+        enemy.bullets.forEach(b => {
+          ctx.fillStyle = b.color;
+          ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI*2); ctx.fill();
+        });
+
+        // Crosshair
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(mousePos.x - 20, mousePos.y); ctx.lineTo(mousePos.x + 20, mousePos.y);
+        ctx.moveTo(mousePos.x, mousePos.y - 20); ctx.lineTo(mousePos.x, mousePos.y + 20);
+        ctx.stroke();
+
+        // Draw Player
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+        ctx.fill();
+
+        // --- NEW OVER-HEAD UI ---
+        const barWidth = 80;
+        const barHeight = 10;
+        const barX = player.x - barWidth / 2;
+        const barY = player.y - player.size - 30; // Positioned 30px above player
+
+        // 1. Player Health Bar (Overhead)
+        ctx.fillStyle = '#333';
+        ctx.fillRect(barX, barY, barWidth, barHeight); // Background
+        ctx.fillStyle = '#4ade80'; 
+        const hpPercent = Math.max(0, player.hp / player.maxHp);
+        ctx.fillRect(barX, barY, barWidth * hpPercent, barHeight); // Health
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(barX, barY, barWidth, barHeight); // Border
+      }
+
+      function gameLoop() {
+        update();
+        draw();
+        if (gameState === 'PLAYING') {
+          requestAnimationFrame(gameLoop);
+        }
+      }
+      
+      function updateScreenShake() {
+      	let shakeMax = 1/0//gameState === 'PLAYING'?100:1000
+        let shakeX = Math.max(-shakeMax,Math.min(shakeMax,Math.random()*screenShakeIntensity*2-screenShakeIntensity))
+        let shakeY = Math.max(-shakeMax,Math.min(shakeMax,Math.random()*screenShakeIntensity*2-screenShakeIntensity))
+        document.body.style = `transform: translate(${shakeX}px, ${shakeY}px)`
+        screenShakeIntensity /= 1.1
+        requestAnimationFrame(updateScreenShake)
+      }
+      
+      updateScreenShake()
+    </script>
+  </body>
+</html>
