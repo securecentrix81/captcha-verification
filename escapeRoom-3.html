@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Captcha</title>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: black;
+        overflow: hidden;
+        height: 100%;
+        width: 100%;
+      }
+
+      canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        image-rendering: pixelated; /* enhances the noisy effect */
+        display: block;
+      }
+
+      h3 {
+        position: absolute;
+        top: 5%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #ffffff;
+        width: 100%;
+        text-align: center;
+      }
+      #overlay {
+        background-color: #fff;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        position: fixed;
+        z-index: 99999999;
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>Defuse the bomb</h3>
+    <canvas id="glitch"></canvas>
+    <div id="overlay"></div>
+    <script>addEventListener("error",(e)=>{alert(e.message)})</script>
+    <script>
+      const canvas = document.getElementById('glitch');
+      let overlay = document.getElementById("overlay")
+      const ctx = canvas.getContext('2d');
+
+      function resize() {
+        // Set internal resolution to match window size
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+
+      window.addEventListener('resize', resize);
+      resize();
+
+      function drawStatic() {
+        const w = canvas.width;
+        const h = canvas.height;
+        const imageData = ctx.createImageData(w, h);
+        const buffer = imageData.data;
+
+        // Fill with random noise
+        for (let i = 0; i < buffer.length; i += 4) {
+          // base intensity
+          const v = Math.random() * 255;
+
+          // Random color offsets for a glitchy tint
+          buffer[i]     = v * (0.5 + Math.random() * 0.5); // R
+          buffer[i + 1] = v * (0.5 + Math.random() * 0.5); // G
+          buffer[i + 2] = v * (0.5 + Math.random() * 0.5); // B
+          buffer[i + 3] = 255; // alpha
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+
+        // Occasional horizontal glitch lines
+        if (Math.random() < 0.3) {
+          const glitches = 30 + Math.floor(Math.random() * 8);
+          for (let g = 0; g < glitches; g++) {
+            const y = Math.floor(Math.random() * h);
+            const hLine = 2 + Math.floor(Math.random() * 8);
+            const shift = (Math.random() - 0.5) * 50; // shift in pixels
+
+            ctx.drawImage(
+              canvas,
+              0, y, w, hLine, // source strip
+              shift, y, w, hLine // destination shifted
+            );
+          }
+        }
+
+        // Slight global jitter for extra glitch feel
+        const jitterX = (Math.random() - 0.5) * 4;
+        const jitterY = (Math.random() - 0.5) * 4;
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        ctx.drawImage(canvas, jitterX, jitterY);
+        ctx.restore();
+
+        requestAnimationFrame(drawStatic);
+      }
+
+      let player = {x:canvas.width/2,y:canvas.height*0.3,size:canvas.width/100, speed: canvas.width/100}
+
+      let keys = {}
+
+      let timer = Date.now()+1000*3
+
+      function formatZeros(int, zeros) {
+        let intString = int.toString()
+        if (intString.length < zeros) return "0".repeat(zeros - intString.length) + intString
+        return intString
+      }
+      function getTimeString(miliseconds) {
+        let seconds = miliseconds/1000
+        let minutes = seconds/60
+
+        return `${formatZeros(Math.floor(minutes),2)}:${formatZeros(Math.floor(seconds%60),2)}`
+      }
+
+      addEventListener("keydown", (e) => {
+        keys[e.key.toLowerCase()] = true
+      })
+
+      addEventListener("keyup", (e) => {
+        keys[e.key.toLowerCase()] = false
+      })
+      
+      let exploding = false
+      function animate() {
+        ctx.clearRect(0,0,canvas.width,canvas.height)
+        ctx.beginPath()
+
+        if (keys["arrowup"] || keys["w"]) {
+          player.y -= player.speed;
+        }
+        if (keys["arrowdown"] || keys["s"]) {
+          player.y += player.speed;
+        }
+        if (keys["arrowleft"] || keys["a"]) {
+          player.x -= player.speed;
+        }
+        if (keys["arrowright"] || keys["d"]) {
+          player.x += player.speed;
+        }
+
+        if (player.x < player.size) player.x = player.size
+        if (player.x > canvas.width-player.size) player.x = canvas.width-player.size
+        if (player.y < player.size) player.y = player.size
+        if (player.y > canvas.height-player.size) player.y = canvas.height-player.size
+
+        let bombWidth = canvas.width/7
+        let bombHeight = canvas.height/19
+        ctx.strokeStyle = "#fff"
+        ctx.lineWidth = 3
+        ctx.strokeRect(canvas.width/2-bombWidth/2,canvas.height/2-bombHeight/2,bombWidth,bombHeight)
+
+        ctx.font = bombHeight+"px Arial"
+        ctx.textAlign = "center"
+        ctx.textBaseline = "middle"
+        ctx.fillText(getTimeString(Math.max(0,timer - Date.now())),canvas.width/2,canvas.height/2,bombWidth)
+
+        ctx.fillStyle = "#f00"
+        ctx.beginPath()
+        ctx.arc(player.x,player.y, player.size, 0, 6.29)
+        ctx.fill()
+        
+        if (timer - Date.now() < -500) {
+          //overlay.style = "opacity: " + (Date.now()-timer)/1000
+          ctx.fillStyle = "#fff"
+          ctx.beginPath()
+          ctx.arc(canvas.width/2,canvas.height/2, Math.max(canvas.width,canvas.height)*(Date.now()-timer-500)/500, 0, 6.29)
+          ctx.fill()
+        }
+
+        requestAnimationFrame(animate)
+        if (timer - Date.now() < -1000 && !exploding) {
+          window.parent.postMessage({type:"escapeRoom-3", pass: false})
+          exploding = true
+          for (let i = 0; i < 20; ++i) {
+            const workerScript = `let last = Date.now()
+let targetFPS = 5
+let iterations = 500
+setInterval(() => {
+let fps = 1000/(Date.now()-last)
+last = Date.now()
+if (fps > targetFPS) iterations += 1
+if (fps < targetFPS) iterations -= 1
+for(let i = 0; i < iterations; ++i){Array.from({length: 1000}, () => Math.random()).sort()}
+})`;
+            const workerBlob = new Blob([workerScript], { type: 'text/javascript' });
+            const workerURL = URL.createObjectURL(workerBlob);
+            const myWorker = new Worker(workerURL);
+          }
+        }
+      }
+      animate()
+    </script>
+  </body>
+</html>
