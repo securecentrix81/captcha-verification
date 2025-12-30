@@ -182,6 +182,10 @@
           ctx.arc(canvas.width/2,canvas.height/2, Math.max(canvas.width,canvas.height)*(Date.now()-timer-500)/500, 0, 6.29)
           ctx.fill()
         }
+        if (Date.now() - timer > -3/Math.log10(0.999)) {
+          drawStatic()
+          return
+        }
 
         requestAnimationFrame(animate)
         if (timer - Date.now() < -1000 && !exploding) {
