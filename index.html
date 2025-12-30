@@ -1,327 +1,448 @@
 <!DOCTYPE html>
-<!-- Created with https://packager.turbowarp.org/ -->
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <!-- We only include this to explicitly loosen the CSP of various packager environments. It does not provide any security. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob:">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Captcha Verification</title>
   <style>
-    body {
-      color: #ffffff;
-      font-family: sans-serif;
-      overflow: hidden;
+    * {
       margin: 0;
       padding: 0;
-    }
-    :root, body.is-fullscreen {
-      background-color: #000000;
-    }
-    [hidden] {
-      display: none !important;
-    }
-    h1 {
-      font-weight: normal;
-    }
-    a {
-      color: inherit;
-      text-decoration: underline;
-      cursor: pointer;
-    }
-
-    #app, #loading, #error, #launch {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
-    .screen {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      cursor: default;
-      user-select: none;
-      -webkit-user-select: none;
-      background-color: #000000;
-    }
-    #launch {
-      background-color: rgba(0, 0, 0, 0.7);
-      cursor: pointer;
-    }
-    .green-flag {
-      width: 80px;
-      height: 80px;
-      padding: 16px;
-      border-radius: 100%;
-      background: rgba(255, 255, 255, 0.75);
-      border: 3px solid hsla(0, 100%, 100%, 1);
-      display: flex;
-      justify-content: center;
-      align-items: center;
       box-sizing: border-box;
     }
-    #loading {
-      
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
     }
-    .progress-bar-outer {
-      border: 1px solid currentColor;
-      height: 10px;
-      width: 200px;
-      max-width: 200px;
-    }
-    .progress-bar-inner {
-      height: 100%;
-      width: 0;
-      background-color: currentColor;
-    }
-    .loading-text, noscript {
-      font-weight: normal;
-      font-size: 36px;
-      margin: 0 0 16px;
-    }
-    .loading-image {
-      margin: 0 0 16px;
-    }
-    #error-message, #error-stack {
-      font-family: monospace;
-      max-width: 600px;
-      white-space: pre-wrap;
-      user-select: text;
-      -webkit-user-select: text;
-    }
-    #error-stack {
-      text-align: left;
-      max-height: 200px;
-      overflow: auto;
-    }
-    .control-button {
-      width: 2rem;
-      height: 2rem;
-      padding: 0.375rem;
-      margin-top: 0.5rem;
-      margin-bottom: 0.5rem;
-      user-select: none;
-      -webkit-user-select: none;
-      cursor: pointer;
-      border: 0;
-      border-radius: 4px;
-    }
-    .control-button-highlight:hover {
-      background: #ff4c4c26;
-    }
-    .control-button-highlight.active {
-      background: #ff4c4c59;
-    }
-    .fullscreen-button {
+
+    .captcha-container {
       background: white;
+      border: 2px solid #d3d3d3;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      max-width: 400px;
+      width: 100%;
+      transform: scale(1.3);
+      text-align: center;
     }
-    .standalone-fullscreen-button {
-      position: absolute;
-      top: 0;
-      right: 0;
-      background-color: rgba(0, 0, 0, 0.5);
-      border-radius: 0 0 0 4px;
-      padding: 4px;
+
+    .captcha-header {
+      margin-bottom: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .captcha-iframe {
+      width: 100%;
+      height: 300px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+
+    .verify-button {
+      width: calc(100% - 50px);
+      padding: 12px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: bold;
       cursor: pointer;
+      transition: background-color 0.3s;
+      display:inline;
+      margin: 0;
     }
-    .sc-canvas {
-      cursor: none;
+
+    .verify-button:hover {
+        background-color: #45a049;
     }
-    .sc-monitor-root[data-opcode^="data_"] .sc-monitor-value-color {
-      background-color: #ff8c1a;
-    }
-    .sc-monitor-row-value-outer {
-      background-color: #fc662c;
-    }
-    .sc-monitor-row-value-editing .sc-monitor-row-value-outer {
-      background-color: #e25b27;
+
+    .verify-button:active {
+      background-color: #3d8b40;
     }
     
+    .verify-button.disabled {
+      background-color: rgb(143.57,143.57,143.57);
+      cursor: not-allowed;
+    }
+    #errormessage {
+      white-space: pre-wrap;
+      padding: 8px;
+      color: #f00;
+    }
+    .buttonContainer {
+      width: 100%;
+      padding: 0;
+      display: block;
+    }
+    .reload-button {
+      margin: 0;
+      display: inline;
+      vertical-align: bottom;
+      border-radius: 10000px;
+      padding: 5px;
+      cursor: pointer;
+    }
+    #iframe-container {
+      width: 100%; 
+      height: 300px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
   </style>
-  <meta name="theme-color" content="#000000">
-  
 </head>
 <body>
-  <div id="app"></div>
-
-  <div id="launch" class="screen" hidden title="Click to start">
-    <div class="green-flag">
-      <svg viewBox="0 0 16.63 17.5" width="42" height="44">
-        <defs><style>.cls-1,.cls-2{fill:#4cbf56;stroke:#45993d;stroke-linecap:round;stroke-linejoin:round;}.cls-2{stroke-width:1.5px;}</style></defs>
-        <path class="cls-1" d="M.75,2A6.44,6.44,0,0,1,8.44,2h0a6.44,6.44,0,0,0,7.69,0V12.4a6.44,6.44,0,0,1-7.69,0h0a6.44,6.44,0,0,0-7.69,0"/>
-        <line class="cls-2" x1="0.75" y1="16.75" x2="0.75" y2="0.75"/>
-      </svg>
+  <script>Q1927356128374=true;addEventListener("error",(e)=>{if(Q1927356128374){Q1927356128374=false;alert(e.message)}})</script>
+    <div class="captcha-container">
+      <div class="captcha-header">
+        Please verify you are human
+      </div>
+      <div id="iframe-container" style="width: 100%; height: 300px; text-align: center">
+      <iframe id="captcha-frame" class="captcha-iframe" allow="fullscreen" sandbox="allow-scripts allow-same-origin allow-modals allow-pointer-lock"></iframe>
+      </div>
+      <pre id="errormessage"></pre>
+      <div class="buttonContainer">
+        <button class="verify-button disabled" id="verify-btn">Verify</button><div id="regenerate-btn" title="Regenerate Captcha" class="reload-button" style="display:inline-block;padding:0;background-color:#eee;">
+          <svg class="reload-button" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="44" height="44" viewBox="0 0 30 30"><path d="M 15 3 C 12.031398 3 9.3028202 4.0834384 7.2070312 5.875 A 1.0001 1.0001 0 1 0 8.5058594 7.3945312 C 10.25407 5.9000929 12.516602 5 15 5 C 20.19656 5 24.450989 8.9379267 24.951172 14 L 22 14 L 26 20 L 30 14 L 26.949219 14 C 26.437925 7.8516588 21.277839 3 15 3 z M 4 10 L 0 16 L 3.0507812 16 C 3.562075 22.148341 8.7221607 27 15 27 C 17.968602 27 20.69718 25.916562 22.792969 24.125 A 1.0001 1.0001 0 1 0 21.494141 22.605469 C 19.74593 24.099907 17.483398 25 15 25 C 9.80344 25 5.5490109 21.062074 5.0488281 16 L 8 16 L 4 10 z"></path></svg>
+        </div>
+      </div>
     </div>
-  </div>
-
-  <div id="loading" class="screen">
-    <noscript>Enable JavaScript</noscript>
-    <h1 class="loading-text">Loading Captcha</h1>
     
-    <div class="progress-bar-outer"><div class="progress-bar-inner" id="loading-inner"></div></div>
-  </div>
-
-  <div id="error" class="screen" hidden>
-    <h1>Error</h1>
-    <details>
-      <summary id="error-message"></summary>
-      <p id="error-stack"></p>
-    </details>
-  </div>
-
-  <script src="script.js"></script>
-  <script>
-    const appElement = document.getElementById('app');
-    const launchScreen = document.getElementById('launch');
-    const loadingScreen = document.getElementById('loading');
-    const loadingInner = document.getElementById('loading-inner');
-    const errorScreen = document.getElementById('error');
-    const errorScreenMessage = document.getElementById('error-message');
-    const errorScreenStack = document.getElementById('error-stack');
-
-    const handleError = (error) => {
-      console.error(error);
-      if (!errorScreen.hidden) return;
-      errorScreen.hidden = false;
-      errorScreenMessage.textContent = '' + error;
-      let debug = error && error.stack || 'no stack';
-      debug += '\nUser agent: ' + navigator.userAgent;
-      errorScreenStack.textContent = debug;
-    };
-    const setProgress = (progress) => {
-      if (loadingInner) loadingInner.style.width = progress * 100 + '%';
-    };
-    const interpolate = (a, b, t) => a + t * (b - a);
-
-    try {
-      setProgress(0.1);
-
-      const scaffolding = new Scaffolding.Scaffolding();
-      scaffolding.width = 480;
-      scaffolding.height = 360;
-      scaffolding.resizeMode = "preserve-ratio";
-      scaffolding.editableLists = false;
-      scaffolding.usePackagedRuntime = true;
-      scaffolding.setup();
-      scaffolding.appendTo(appElement);
-
-      const vm = scaffolding.vm;
-      window.scaffolding = scaffolding;
-      window.vm = scaffolding.vm;
-      window.Scratch = {
-        vm,
-        renderer: vm.renderer,
-        audioEngine: vm.runtime.audioEngine,
-        bitmapAdapter: vm.runtime.v2BitmapAdapter,
-        videoProvider: vm.runtime.ioDevices.video.provider
-      };
-
-      scaffolding.setUsername("player####".replace(/#/g, () => Math.floor(Math.random() * 10)));
-      scaffolding.setAccentColor("#ff4c4c");
-
-      try {
-        scaffolding.addCloudProvider(new Scaffolding.Cloud.WebSocketProvider(["wss://clouddata.turbowarp.org","wss://clouddata.turbowarp.xyz"], "1260524924"));
-      } catch (error) {
-        console.error(error);
-      }
-
-      vm.setTurboMode(false);
-      if (vm.setInterpolation) vm.setInterpolation(false);
-      if (vm.setFramerate) vm.setFramerate(30);
-      if (vm.renderer.setUseHighQualityRender) vm.renderer.setUseHighQualityRender(false);
-      if (vm.setRuntimeOptions) vm.setRuntimeOptions({
-        fencing: true,
-        miscLimits: true,
-        maxClones: 300,
-      });
-      if (vm.setCompilerOptions) vm.setCompilerOptions({
-        enabled: true,
-        warpTimer: false
-      });
-      if (vm.renderer.setMaxTextureDimension) vm.renderer.setMaxTextureDimension(2048);
-
-      // enforcePrivacy threat model only makes sense in the editor
-      if (vm.runtime.setEnforcePrivacy) vm.runtime.setEnforcePrivacy(false);
-
-      if (typeof ScaffoldingAddons !== 'undefined') {
-        ScaffoldingAddons.run(scaffolding, {"gamepad":false,"pointerlock":false,"specialCloudBehaviors":false,"unsafeCloudBehaviors":false,"pause":false});
-      }
-
-      scaffolding.setExtensionSecurityManager({
-        getSandboxMode: () => 'unsandboxed',
-        canLoadExtensionFromProject: () => true
-      });
-      for (const extension of []) {
-        vm.extensionManager.loadExtensionURL(extension);
-      }
-
-    } catch (e) {
-      handleError(e);
-    }
-  </script>
-  
-  
     <script>
-      const getProjectData = (function() {
-        const storage = scaffolding.storage;
-        storage.onprogress = (total, loaded) => {
-          setProgress(interpolate(0.2, 0.98, loaded / total));
-        };
-        
-        storage.addWebStore(
-          [
-            storage.AssetType.ImageVector,
-            storage.AssetType.ImageBitmap,
-            storage.AssetType.Sound,
-            storage.AssetType.Font
-          ].filter(i => i),
-          (asset) => new URL('./assets/' + asset.assetId + '.' + asset.dataFormat, location).href
-        );
-        return () => new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.onload = () => {
-          resolve(xhr.response);
-        };
-        xhr.onerror = () => {
-          if (location.protocol === 'file:') {
-            reject(new Error('Zip environment must be used on a website, not on a local file. To fix this error, use the "Plain HTML" environment instead.'));
+      let validCaptchas = [
+        {
+          weight: 1,
+          data: [
+            {
+              weight: 1,
+              data: "typing-test-1"
+            },
+            {
+              weight: 1,
+              data: "typing-test-2"
+            }
+          ]
+        }, 
+        {
+          weight: 0.9,
+          data: "no-mouse-1"
+        },
+        {
+          weight: 0.9,
+          data: "clicker-1"
+        },
+        {
+          weight: 1,
+          data: "selectAllPixels-1"
+        },
+        {
+          weight: 0.9,
+          data: "logarithmic-1"
+        },
+        {
+          weight: 1,
+          data: "ambiguous-answer-1"
+        },
+        {
+          weight: 1,
+          data: "enterIP-1"
+        },
+        {
+          weight: 1.2,
+          data: [
+            {
+              weight: 1,
+              data: "escapeRoom-1"
+            },
+            {
+              weight: 1,
+              data: "escapeRoom-2"
+            }
+          ]
+        },
+        {
+          weight: 1,
+          data: "guess-1"
+        },
+        {
+          weight: 0.9,
+          data: "flipcoin-1"
+        },
+        {
+          weight: 1.2,
+          data: "tic-tac-toe-1"
+        },
+        {
+          weight: 1.1,
+          data: "reaction-1"
+        }, 
+        {
+          weight: 1.4,
+          data: "platformer-1"
+        },
+        {
+          weight: 1.4,
+          data: "riggedplinko-1"
+        },
+        {
+          weight: 1.1,
+          data: "guess-2"
+        },
+        {
+          weight: 0.9,
+          data: "click-1"
+        },
+        {
+          weight: 0.9,
+          data: "proof-1"
+        },
+        {
+          weight: 1.4,
+          data: "impossiblegame-1"
+        },
+        {
+          weight: 1.1,
+          data: "index"
+        },
+        {
+          weight: 1,
+          data: "escapeRoom-3"
+        },
+        {
+          weight: 1.4,
+          data: [
+            {weight: 1, data: "osu-1"},
+            {weight: 1, data: "osu-2"},
+            {weight: 1, data: "osu-3"},
+          ]
+        },
+      ]
+      let verifybtn = document.getElementById('verify-btn')
+      let regeneratebtn = document.getElementById('regenerate-btn')
+      let errormessage = document.getElementById('errormessage')
+      
+      let onverify = () => {}
+      let onreset = () => {}
+      let intervals = []
+      let timeouts = []
+      window.addEventListener("message", (e) => {
+        let data = e.data
+        if (data.type === "clear_error") {errormessage.innerText = ""}
+        if (data.type === "error_message") {errormessage.innerText = data.message}
+        if (data.type === "typing-test-1" || data.type === "typing-test-2") {
+          if (data.pass) {
+            verifybtn.classList.remove("disabled")
+            onverify = () => {
+              if (!verifybtn.classList.contains("disabled")) {
+                errormessage.innerText = "An error occurred\nLoading new captcha..."
+                verifybtn.classList.add("disabled")
+                timeouts.push(setTimeout(() => {
+                  loadIframeContent()
+                },1000))
+              }
+            }
+          }
+        }
+        if (data.type === "selectAllPixels-1") {
+          verifybtn.classList.remove("disabled")
+          errormessage.innerText = ""
+          onverify = () => {
+            errormessage.innerText = ""
+            let returnMessage = `${data.wrong} pixels are wrong\n`
+            if (data.remove > 0) {
+              returnMessage += `You need to erase ${data.remove} pixels\n`
+            }
+            if (data.add > 0) {
+              returnMessage += `You need to add ${data.add} pixels\n`
+            }
+            if (data.wrong > 0) {
+              errormessage.innerText = returnMessage
+            } else {
+              errormessage.innerText = "1 pixels are wrong\nYou need to erase 1 pixels"
+            }
+          }
+        }
+        if (data.type === "ambiguous-answer-1") {
+          verifybtn.classList.remove("disabled")
+          onverify = () => {
+            errormessage.innerText = "The person is spinning to the " + (data.selection === "left" ? "right" : "left") + "\nLoading new captcha..."
+            verifybtn.classList.add("disabled")
+            timeouts.push(setTimeout(() => {
+              loadIframeContent()
+            },1000))
+          }
+        }
+        if (data.type === "enterIP-1") {
+          verifybtn.classList.remove("disabled")
+          onverify = () => {
+            errormessage.innerText = ""
+            if (!(/^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/).test(data.text)) {
+              errormessage.innerText = "That's not your IP"
+              return
+            }
+            if (data.ip === false) {
+              errormessage.innerText = "Uploading IP to hacker..."
+              timeouts.push(setTimeout(() => {
+                errormessage.innerText = "Uploading IP to hacker...\nHey thanks for your IP!\nAs a reward, we will give you another captcha."
+                timeouts.push(setTimeout(() => {
+                  loadIframeContent()
+                },2000))
+              },1000))
+            } else {
+              if (data.text !== data.ip) {
+                errormessage.innerText = "That's not your IP"
+              } else {
+                errormessage.innerText = "Uploading IP to hacker..."
+                timeouts.push(setTimeout(() => {
+                  errormessage.innerText = "Uploading IP to hacker...\nHey thanks for your IP!\nAs a reward, we will give you another captcha."
+                  timeouts.push(setTimeout(() => {
+                    loadIframeContent()
+                  },2000))
+                },1000))
+              }
+            }
+          }
+        }
+        if (data.type === "escapeRoom-1" || data.type === "escapeRoom-2") {
+          if (data.ended) {
+            errormessage.innerHTML = "0:00:00\nTime's up. Regenerating captcha..."
+            timeouts.push(setTimeout(() => {
+              loadIframeContent()
+            },1000))
           } else {
-            reject(new Error('Request to load project data failed.'));
+            let intervalID = setInterval(() => {
+              let time = 60000-(Date.now()-data.start)
+              if (time <= 0) {
+                clearInterval(intervalID)
+                return
+              }
+              let seconds = Math.floor(time/1000)
+              if (seconds.toString().length === 1) seconds = "0" + seconds.toString()
+              let miliseconds = time%1000
+              while (miliseconds.toString().length < 3) {miliseconds = "0" + miliseconds.toString()}
+              errormessage.innerHTML = `<span style="color:#000">0:${seconds}:${miliseconds}</span>`
+            })
+            intervals.push(intervalID)
           }
-        };
-        xhr.onprogress = (e) => {
-          if (e.lengthComputable) {
-            setProgress(interpolate(0.1, 0.2, e.loaded / e.total));
+        }
+        if (data.type === "flipcoin-1") {
+          if (data.spinStart) {
+            errormessage.innerText = ""
+          } else {
+            errormessage.innerText = `Coin did not land on heads. ${10-data.attempts}/10 attempts remaining.`
+            if (data.attempts >= 10) {
+              errormessage.innerText += `\nOut of attempts. Reloading captcha...`
+              timeouts.push(setTimout(() => {
+                loadIframeContent
+              }, 1000))
+            }
           }
-        };
-        xhr.responseType = 'arraybuffer';
-        xhr.open('GET', "./assets/project.json");
-        xhr.send();
-      });
-      })();
-    </script>
-  <script>
-    const run = async () => {
-      const projectData = await getProjectData();
-      await scaffolding.loadProject(projectData);
-      setProgress(1);
-      loadingScreen.hidden = true;
-      if (true) {
-        scaffolding.start();
-      } else {
-        launchScreen.hidden = false;
-        launchScreen.addEventListener('click', () => {
-          launchScreen.hidden = true;
-          scaffolding.start();
-        });
-        launchScreen.focus();
+        }
+        if (data.type === "riggedplinko-1") {
+          if (data.restart) errormessage.innerText = ""
+          if (data.computerGain != null) {
+            errormessage.innerText = `Computer gained ${data.computerGain===0?"no":data.computerGain} point${data.computerGain===1?"":"s"}!`
+          }
+          if (data.playerGain != null) {
+            errormessage.innerText = `You gained ${data.playerGain===0?"no":data.playerGain} point${data.playerGain===1?"":"s"}!`
+          }
+          if (data.ended) {
+            errormessage.innerText = `Computer won by ${data.computerScore-data.playerScore} points!\nWin the game to pass the captcha`
+          }
+        }
+        if (data.type === "platformer-1") {
+          errormessage.innerText = data.message
+          errormessage.style = "font-size: 9px"
+        }
+        if (data.type === "guess-2") {
+          errormessage.innerText = "The number was " + data.number + ". Click \"Try again\" to try again."
+        }
+        if (data.type === "escapeRoom-3") {
+          errormessage.innerText = "You failed to defuse the bomb"
+          let shake = 1000
+          intervals.push(setInterval(() => {
+            document.body.style.transform = `translate(${Math.random()*shake*2-shake}px, ${Math.random()*shake*2-shake}px)`
+            shake /= 1.001
+          }))
+          onreset = () => {document.body.style.transform = ""}
+        }
+      })
+      function getIframeURL() {
+        let captchaFile = validCaptchas[Math.floor(Math.random()*validCaptchas.length)]
+        while (typeof captchaFile === "object") {
+          captchaFile = captchaFile[Math.floor(Math.random()*captchaFile.length)]
+        }
+        return {type:captchaFile,html:HtmlService.createHtmlOutputFromFile(captchaFile).getContent()};
       }
-    };
-    run().catch(handleError);
-  </script>
-</body>
+      function getRandomCaptcha(captchas) {
+        if (typeof captchas !== "object") return captchas
+        let totalWeights = 0
+        for (let weight of captchas) {
+          totalWeights += weight.weight
+        }
+        let selectedWeight = totalWeights*Math.random()
+        let currentWeight = 0
+        for (let weight of captchas) {
+          currentWeight += weight.weight
+          if (currentWeight >= selectedWeight) {
+            weight.weight /= 1.2
+            return getRandomCaptcha(weight.data)
+          }
+        }
+        alert("An error occurred. This should not happen. Actually, there is no way this can even happen. Why are you reading this? Thanks for wasting your time reading this message.")
+      }
+      function loadIframeContent() {
+        document.getElementById('captcha-frame').src = `data:text/html,<style>body,html{height:100%;margin:0}body{display:grid;place-items:center}h1{margin:0}</style><h1>Loading Captcha...</h1>`
+        verifybtn.classList.add("disabled")
+        for (let i of timeouts) clearTimeout(i)
+        for (let i of intervals) clearInterval(i)
+        timeouts = false
+        intervals = false // any intervals called before loading will error
+        errormessage.innerText = ""
+        errormessage.style = ""
+        onverify = () => {}
+        onreset()
+        onreset = () => {}
+        
+        let iframeURL = getRandomCaptcha(validCaptchas)
+        if (iframeURL === "platformer-1") {
+          document.getElementById("captcha-frame").style = "height: 100%; width: auto; aspect-ratio:1"
+        } else if (iframeURL === "riggedplinko-1") {
+          document.getElementById("captcha-frame").style = "height: 500px; width: auto; aspect-ratio:1;transform: scale(0.6)"
+        } else if (iframeURL === "proof-1") {
+          verifybtn.classList.remove("disabled")
+          onverify = () => {
+            errormessage.style = "text-align: left"
+            errormessage.innerHTML = "Your answer is incorrect. Tips to correct your answer: <ol><li>Check over your work</li><li>Explain your work</li><li>Stay on topic</li></ol>"
+          }
+        } else if (iframeURL === "index") {
+          document.getElementById("captcha-frame").style = "width:700px;height:600px;transform:scale(0.5);display:block;aspect-ratio:7/6"
+        } else {
+          document.getElementById("captcha-frame").style = "width: 100%; height: 300px"
+        }
+        timeouts = []
+        intervals = []
+        document.getElementById("captcha-frame").src = iframeURL + ".html"
+      }
+      verifybtn.addEventListener("click", (e) => {
+        onverify()
+      })
+      regeneratebtn.addEventListener("click", (e) => {
+        loadIframeContent()
+      })
+      
+      loadIframeContent()
+    </script>
+  </body>
 </html>
