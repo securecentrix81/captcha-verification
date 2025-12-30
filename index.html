@@ -215,12 +215,17 @@
           weight: 1.1,
           data: "index"
         },
+        {
+          weight: 1,
+          data: "escapeRoom-3"
+        },
       ]
       let verifybtn = document.getElementById('verify-btn')
       let regeneratebtn = document.getElementById('regenerate-btn')
       let errormessage = document.getElementById('errormessage')
       
       let onverify = () => {}
+      let onreset = () => {}
       let intervals = []
       let timeouts = []
       window.addEventListener("message", (e) => {
@@ -355,6 +360,15 @@
         if (data.type === "guess-2") {
           errormessage.innerText = "The number was " + data.number + ". Click \"Try again\" to try again."
         }
+        if (data.type === "escapeRoom-3") {
+          errormessage.innerText = "You failed to defuse the bomb"
+          let shake = 1000
+          intervals.push(setInterval(() => {
+            document.body.style.transform = `translate(${Math.random()*shake*2-shake}px, ${Math.random()*shake*2-shake}px)`
+            shake /= 1.001
+          }))
+          onreset = () => {document.body.style.transform = ""}
+        }
       })
       function getIframeURL() {
         let captchaFile = validCaptchas[Math.floor(Math.random()*validCaptchas.length)]
@@ -390,6 +404,8 @@
         errormessage.innerText = ""
         errormessage.style = ""
         onverify = () => {}
+        onreset()
+        onreset = () => {}
         
         let iframeURL = getRandomCaptcha(validCaptchas)
         if (iframeURL === "platformer-1") {
