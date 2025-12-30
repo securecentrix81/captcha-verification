@@ -395,6 +395,7 @@
         } else if (iframeURL === "proof-1") {
           verifybtn.classList.remove("disabled")
           onverify = () => {
+            errormessage.style = "text-align: left"
             errormessage.innerHTML = "Your answer is incorrect. Tips to correct your answer: <ol><li>Check over your work</li><li>Explain your work</li><li>Stay on topic</li></ol>"
           }
         } else {
