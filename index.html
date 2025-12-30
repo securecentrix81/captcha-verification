@@ -211,6 +211,10 @@
           weight: 1.4,
           data: "impossiblegame-1"
         },
+        {
+          weight: 1.1,
+          data: "index"
+        },
       ]
       let verifybtn = document.getElementById('verify-btn')
       let regeneratebtn = document.getElementById('regenerate-btn')
@@ -398,6 +402,8 @@
             errormessage.style = "text-align: left"
             errormessage.innerHTML = "Your answer is incorrect. Tips to correct your answer: <ol><li>Check over your work</li><li>Explain your work</li><li>Stay on topic</li></ol>"
           }
+        } else if (iframeURL = "index") {
+          document.getElementById("captcha-frame").style = "width:400%; height:1200px; transform: scale(0.25)"
         } else {
           document.getElementById("captcha-frame").style = "width: 100%; height: 300px"
         }
