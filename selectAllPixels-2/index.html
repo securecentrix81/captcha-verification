@@ -44,7 +44,7 @@
 
     <div class="firehydrant">
       <h3 style="color:rgba(0,0,0,0);margin:10px;">Select all pixels containing a Fire Hydrant</h3>
-      <img src="image.jpeg" style="width:150px;height:200px" width="150" height="200" style="filter:contrast(50%) brightness(70%)">
+      <img src="image.png" style="width:150px;height:200px" width="150" height="200" style="filter:contrast(50%) brightness(70%)">
     </div>
 
     <div class="firehydrant">
@@ -148,7 +148,7 @@
 
 
       async function updateScoreInterval() {
-        let score = await getScore(await urlContentToDataUri("transparent.jpeg"))
+        let score = await getScore(await urlContentToDataUri("transparent.png"))
         window.parent.postMessage({type: "selectAllPixels-1", pass: false, wrong: score.wrong, add: score.add, remove: score.remove}, "*")
       }
       let lastPostMessage = 0
