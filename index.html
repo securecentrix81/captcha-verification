@@ -390,7 +390,7 @@
           if (data.input && data.input.length > 0) {
             verifybtn.classList.remove("disabled")
             onverify = () => {
-              iframe.contentWindow.postMessage("reload", "*")
+              document.getElementById("captcha-frame").contentWindow.postMessage("reload", "*")
               verifybtn.classList.add("disabled")
               if (data.input === data.answer) {
                 errormessage.innerText = "You're close, but it's incorrect. Please try again."
