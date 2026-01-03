@@ -1,0 +1,217 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      .firehydrant {
+        position: absolute;
+        top: 0px;
+        left: 50%;
+        transform: translateX(-50%);
+        width:100%;
+      }
+      .controls {
+        margin: 10px 0;
+      }
+      button {
+        padding: 4px 8px;
+        margin-right: 10px;
+        cursor: pointer;
+        border: 2px solid #333;
+        background: white;
+        border-radius: 4px;
+      }
+      .controls button.active {
+        background: #06c;
+        color: white;
+      }
+      .size-selector {
+        margin: 10px 0;
+      }
+      body {
+        text-align:center;
+        overflow:scroll;
+        width: 100%;
+      }
+      canvas, img {
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+      }
+    </style>
+  </head>
+  <body>
+    <script>Q1927356128374=true;addEventListener("error",(e)=>{if(Q1927356128374){Q1927356128374=false;alert(e.message)}})</script>
+
+    <div class="firehydrant">
+      <h3 style="color:rgba(0,0,0,0);margin:10px;">Select all pixels containing a Fire Hydrant</h3>
+      <img src="image.jpeg" style="width:150px;height:200px" width="150" height="200" style="filter:contrast(50%) brightness(70%)">
+    </div>
+
+    <div class="firehydrant">
+      <h3 style="margin:10px">Select all pixels containing a Fire Hydrant</h3>
+      <canvas style="width:150px;height:200px;filter: opacity(80%);"></canvas>
+
+      <div class="controls" style="margin:5px">
+        <button id="penBtn" class="active">Pen</button>
+        <button id="eraserBtn">Eraser</button>
+      </div>
+
+      <div class="size-selector" style="margin:5px">
+        <label>Brush Size: </label>
+        <input type="range" id="sizeSlider" min="1" max="20" value="3">
+        <span id="sizeDisplay">3</span>px
+      </div>
+    </div>
+    <span id="output"></span>
+    <div style="width:100%;height:320px;background-color:rgba(0,0,0,0);z-index:-999999999999"></div>
+    <script>
+      const canvas = document.querySelector('canvas');
+      canvas.width = 150
+      canvas.height = 200
+      const ctx = canvas.getContext('2d');
+      let isDrawing = false;
+      let currentTool = 'pen'; // 'pen' or 'eraser'
+      let brushSize = 3;
+
+      // Set up drawing style
+      ctx.strokeStyle = '#06c';
+      ctx.lineWidth = brushSize;
+      ctx.lineCap = 'round';
+
+      // Tool selection
+      const penBtn = document.getElementById('penBtn');
+      const eraserBtn = document.getElementById('eraserBtn');
+      const sizeSlider = document.getElementById('sizeSlider');
+      const sizeDisplay = document.getElementById('sizeDisplay');
+
+      function getScore(imageSrc) {
+        return new Promise((res) => {
+          const img = new Image();
+          img.onload = function() {
+            const imageCanvas = document.createElement('canvas');
+            imageCanvas.width = img.width;
+            imageCanvas.height = img.height;
+            const imagectx = imageCanvas.getContext('2d');
+            imagectx.drawImage(img, 0, 0);
+
+            const imageData = imagectx.getImageData(0, 0, img.width, img.height);
+            const pixels = imageData.data;
+            let drawingData = ctx.getImageData(0, 0, canvas.width,canvas.height);
+            let drawingPixels = drawingData.data
+            //const binaryArray = [];
+
+            let misses = -1459
+            let toErase = 0
+            let toAdd = -1459
+            // Loop through pixels (RGBA format: 4 values per pixel)
+            for (let i = 0; i < pixels.length; i += 4) {
+              if (pixels[i + 3] !== drawingPixels[i+3]) {
+                misses += 1
+                if (pixels[i+3] > 0) {
+                  ++toAdd
+                } else {
+                  ++toErase
+                }
+              }
+            }
+            res({wrong: misses, add: toAdd, remove: toErase});return
+            let returnMessage = `${misses} pixels are wrong\n`
+            if (toErase > 0) {
+              returnMessage += `You need to erase ${toErase} pixels\n`
+            }
+            if (toAdd > 0) {
+              returnMessage += `You need to add ${toAdd} pixels\n`
+            }
+            if (misses > 0) {
+              res(returnMessage)
+            } else {
+              res("1 pixels are wrong\nYou need to erase 1 pixels")
+            }
+
+          }
+          img.src = imageSrc;
+        })
+      }
+      // Source - https://stackoverflow.com/a
+      // Posted by GetFree, modified by community. See post 'Timeline' for change history
+      // Retrieved 2026-01-02, License - CC BY-SA 4.0
+
+      function urlContentToDataUri(url){
+        return  fetch(url)
+          .then( response => response.blob() )
+          .then( blob => new Promise( callback =>{
+          let reader = new FileReader() ;
+          reader.onload = function(){ callback(this.result) } ;
+          reader.readAsDataURL(blob) ;
+        }) ) ;
+      }
+
+
+      async function updateScoreInterval() {
+        let score = await getScore(await urlContentToDataUri("transparent.jpeg"))
+        window.parent.postMessage({type: "selectAllPixels-1", pass: false, wrong: score.wrong, add: score.add, remove: score.remove}, "*")
+      }
+      let lastPostMessage = 0
+      penBtn.addEventListener('click', () => {
+        currentTool = 'pen';
+        penBtn.classList.add('active');
+        eraserBtn.classList.remove('active');
+      });
+      eraserBtn.addEventListener('click', () => {
+        currentTool = 'eraser';
+        eraserBtn.classList.add('active');
+        penBtn.classList.remove('active');
+      });
+
+      sizeSlider.addEventListener('input', (e) => {
+        brushSize = e.target.value;
+        sizeDisplay.textContent = brushSize;
+      });
+
+      canvas.addEventListener('mousedown', (e) => {
+        isDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        if (brushSize === 1) {
+          ctx.fillRect(e.clientX - rect.left, e.clientY - rect.top, 1, 1)
+        } else {
+          ctx.beginPath()
+          ctx.arc(e.clientX - rect.left, e.clientY - rect.top, brushSize, 0, 6.29);
+          ctx.fill();
+        }
+        if (lastPostMessage + 10 < Date.now()) {
+          lastPostMessage = Date.now()
+          updateScoreInterval()
+        }
+      });
+
+      canvas.addEventListener('mousemove', (e) => {
+        if (!isDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+
+        if (currentTool === 'pen') {
+          ctx.globalCompositeOperation = 'source-over';
+        } else if (currentTool === 'eraser') {
+          ctx.globalCompositeOperation = 'destination-out';
+        }
+        ctx.fillStyle = '#06e';
+        ctx.beginPath()
+        ctx.arc(e.clientX - rect.left, e.clientY - rect.top, brushSize, 0, 6.29);
+        ctx.fill();
+        if (lastPostMessage + 10 < Date.now()) {
+          lastPostMessage = Date.now()
+          updateScoreInterval()
+        }
+      });
+
+      canvas.addEventListener('mouseup', () => {
+        isDrawing = false;
+        ctx.globalCompositeOperation = 'source-over'; // Reset to default
+      });
+
+      canvas.addEventListener('mouseleave', () => {
+        isDrawing = false;
+        ctx.globalCompositeOperation = 'source-over'; // Reset to default
+      });
+    </script>
+  </body>
+</html>
