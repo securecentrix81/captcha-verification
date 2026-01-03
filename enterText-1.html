@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 15px;
+      }
+      #captcha-canvas {
+        background: #fff;
+        border: 1px solid #d3d3d3;
+        border-radius: 4px;
+        margin-bottom: 12px;
+      }
+      #user-input {
+        width: 220px;
+        padding: 8px 12px;
+        font-size: 18px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        outline: none;
+        text-align: center;
+        letter-spacing: 4px;
+        font-family: monospace;
+      }
+      .hint { font-size: 11px; color: #888; margin-top: 8px; }
+    </style>
+  </head>
+  <body>
+    <canvas id="captcha-canvas" width="220" height="70"></canvas>
+    <input type="text" id="user-input" placeholder="Enter text" maxlength="8" autocomplete="off" spellcheck="false">
+    <div class="hint">Type the characters shown above</div>
+
+    <script>
+      const WARP_CONFIG = {
+        textLength: 6,
+        charset: 'ABCDEFGHIJKLMNOPQRSTUXWXYZabcdefghijklmnopqrstuvwxyz1234567890~!@#$%^&*()_+`-={}|[]\\:;\'"<>?,./OOOOOooooo0000011111lllll|||||IIIIIOOOOOooooo0000011111lllll|||||IIIII',
+        fontSize: 40,
+        fontFamily: 'Arial, sans-serif',
+        intensity: 1,
+        maxRotation: 45,
+        maxScale: 0.4,
+        // Warp/Wave settings
+        warpFrequency: 0.5, // How many waves across the canvas
+        warpAmplitude: 5,    // How "curvy" the distortion is
+        noiseLines: 0,
+        noiseDots: 3000,
+        textColors: ['#000', '#000'],
+        lineColor: '#fff',
+        dotColor: '#333',
+        backgroundColor: '#ffffff'
+      };
+
+      const canvas = document.getElementById('captcha-canvas');
+      const ctx = canvas.getContext('2d');
+      const input = document.getElementById('user-input');
+
+      // Off-screen canvas for the warp buffer
+      const bufferCanvas = document.createElement('canvas');
+      const bCtx = bufferCanvas.getContext('2d');
+      bufferCanvas.width = canvas.width;
+      bufferCanvas.height = canvas.height;
+
+      let currentAnswer = generateRandomText();
+
+      function rand(min, max) { return Math.random() * (max - min) + min; }
+      function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
+
+      function generateRandomText() {
+        let result = '';
+        for (let i = 0; i < WARP_CONFIG.textLength; i++) {
+          result += WARP_CONFIG.charset[randInt(0, WARP_CONFIG.charset.length - 1)];
+        }
+        return result;
+      }
+
+      function drawCaptcha() {
+        const W = canvas.width;
+        const H = canvas.height;
+        const cfg = WARP_CONFIG;
+
+        // 1. Clear Main and Buffer
+        ctx.fillStyle = cfg.backgroundColor;
+        ctx.fillRect(0, 0, W, H);
+        bCtx.clearRect(0, 0, W, H);
+
+        // 2. Draw Text to BUFFER canvas first
+        bCtx.font = `bold ${cfg.fontSize}px ${cfg.fontFamily}`;
+        bCtx.textAlign = 'center';
+        bCtx.textBaseline = 'middle';
+
+        const charSpacing = (W - 40) / cfg.textLength;
+        for (let i = 0; i < currentAnswer.length; i++) {
+          const x = 20 + (charSpacing / 2) + (i * charSpacing);
+          const y = H / 2 + rand(-3, 3);
+          const rotation = rand(-cfg.maxRotation, cfg.maxRotation) * (Math.PI / 180);
+          const scale = 1 + rand(-cfg.maxScale, cfg.maxScale);
+
+          bCtx.save();
+          bCtx.translate(x, y);
+          bCtx.rotate(rotation);
+          bCtx.scale(scale, scale);
+          bCtx.fillStyle = cfg.textColors[randInt(0, cfg.textColors.length - 1)];
+          bCtx.fillText(currentAnswer[i], 0, 0);
+          bCtx.restore();
+        }
+
+        for (let y = 0; y < H; y++) {
+          const xOffset = Math.sin(y * cfg.warpFrequency * Math.random()) * cfg.warpAmplitude * (1+Math.random());
+          // ctx.drawImage(source, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+          ctx.drawImage(bufferCanvas, 0, y, W, 1, xOffset, y, W, 1);
+        }
+
+        // 4. Draw noise (on top of warped text)
+        ctx.globalAlpha = 0.3
+        for (let i = 0; i < cfg.noiseDots; i++) {
+          ctx.beginPath();
+          ctx.arc(rand(0, W), rand(0, H), rand(0.5, 1.5), 0, Math.PI * 2);
+          ctx.fillStyle = cfg.dotColor;
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1
+
+        ctx.strokeStyle = cfg.lineColor;
+        ctx.lineWidth = 2
+        for (let i = 0; i < cfg.noiseLines; i++) {
+          ctx.beginPath();
+          ctx.moveTo(rand(0, 20), rand(0, H));
+          ctx.bezierCurveTo(rand(0, W), rand(0, H), rand(0, W), rand(0, H), rand(W-20, W), rand(0, H));
+          ctx.stroke();
+        }
+
+        input.value = '';
+        notifyParent();
+      }
+
+      function notifyParent() {
+        window.parent.postMessage({
+          type: "enterText-1",
+          input: input.value,
+          answer: currentAnswer
+        }, "*");
+      }
+
+      addEventListener("message", (e) => {
+        if (e.data === "reload") {
+          currentAnswer = generateRandomText();
+          drawCaptcha()
+        }
+      })
+
+      input.addEventListener('input', notifyParent);
+      drawCaptcha()
+    </script>
+  </body>
+</html>
