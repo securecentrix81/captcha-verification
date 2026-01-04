@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simon Says</title>
+    <style>
+        :root {
+            --green: #2ecc71;
+            --red: #e74c3c;
+            --yellow: #f1c40f;
+            --blue: #3498db;
+            --bg: #ffffff;
+            --pad-size: 150px;
+            --gap: 20px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: var(--bg);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        #game-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: var(--gap);
+            width: fit-content;
+            padding: 20px;
+        }
+
+        .pad {
+            width: var(--pad-size);
+            height: var(--pad-size);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.1s, box-shadow 0.2s;
+            opacity: 0.6;
+            border: none;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .pad:active {
+            transform: scale(0.95);
+        }
+
+        .pad.active {
+            opacity: 1;
+            box-shadow: 0 0 30px rgba(0,0,0,0.1);
+            transform: scale(1.02);
+        }
+
+        #green { background-color: var(--green); }
+        #red { background-color: var(--red); }
+        #yellow { background-color: var(--yellow); }
+        #blue { background-color: var(--blue); }
+
+        .disabled {
+            pointer-events: none;
+        }
+
+        @media (max-width: 400px) {
+            :root {
+                --pad-size: 120px;
+                --gap: 15px;
+            }
+        }
+
+        /* Status indicator (optional, minimal) */
+        #status {
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            color: #333;
+            font-weight: 300;
+            height: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="status">Ready?</div>
+
+    <div id="game-container">
+        <button class="pad disabled" id="green" data-index="0"></button>
+        <button class="pad disabled" id="red" data-index="1"></button>
+        <button class="pad disabled" id="yellow" data-index="2"></button>
+        <button class="pad disabled" id="blue" data-index="3"></button>
+    </div>
+
+    <script>
+        // Game Configuration
+        let SEQUENCE_LENGTH = 5; // Developer can change this
+        let PLAYBACK_SPEED = 500; // Developer can change this (ms)
+
+        const pads = [
+            document.getElementById('green'),
+            document.getElementById('red'),
+            document.getElementById('yellow'),
+            document.getElementById('blue')
+        ];
+        const statusText = document.getElementById('status');
+        const container = document.getElementById('game-container');
+
+        let sequence = [];
+        let userProgress = 0;
+        let isPlayingSequence = false;
+
+        function init() {
+            generateSequence();
+            playSequence();
+        }
+
+        function generateSequence() {
+            sequence = [];
+            for (let i = 0; i < SEQUENCE_LENGTH; i++) {
+                sequence.push(Math.floor(Math.random() * 4));
+            }
+            userProgress = 0;
+        }
+
+        async function playSequence() {
+            isPlayingSequence = true;
+            setInteraction(false);
+            
+            // Short delay before starting
+            await wait(1000);
+            
+            statusText.textContent = "Watch...";
+            
+            await wait(1000);
+
+            for (const padIndex of sequence) {
+                await flashPad(padIndex);
+                await wait(PLAYBACK_SPEED / 2);
+            }
+
+            statusText.textContent = "Your turn!";
+            setInteraction(true);
+            isPlayingSequence = false;
+        }
+
+        function flashPad(index) {
+            return new Promise(resolve => {
+                const pad = pads[index];
+                pad.classList.add('active');
+                
+                // You could add a sound here if needed
+                
+                setTimeout(() => {
+                    pad.classList.remove('active');
+                    setTimeout(resolve, 100);
+                }, PLAYBACK_SPEED);
+            });
+        }
+
+        function wait(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function setInteraction(enabled) {
+            pads.forEach(pad => {
+                if (enabled) {
+                    pad.classList.remove('disabled');
+                } else {
+                    pad.classList.add('disabled');
+                }
+            });
+        }
+
+        function handlePadClick(e) {
+            if (isPlayingSequence) return;
+
+            const buttonIndex = parseInt(e.target.dataset.index);
+            
+            // Visual feedback for click
+            e.target.classList.add('active');
+            setTimeout(() => e.target.classList.remove('active'), 150);
+
+            // Notify parent
+            window.parent.postMessage({
+                type: "simonSays-1",
+                buttonIndex: buttonIndex,
+                step: userProgress,
+                fullSequence: sequence,
+                isCorrect: buttonIndex === sequence[userProgress],
+                isComplete: (userProgress === sequence.length - 1) && (buttonIndex === sequence[userProgress])
+            }, "*");
+
+            userProgress++;
+        }
+
+        // Event Listeners
+        pads.forEach(pad => {
+            pad.addEventListener('click', handlePadClick);
+        });
+
+        window.addEventListener('message', (event) => {
+            if (event.data === "reload") {
+                statusText.textContent = event.statusText;
+            	SEQUENCE_LENGTH = event.sequence_length
+                PLAYBACK_SPEED = event.playback_speed
+                init();
+            }
+        });
+
+        // Start initial game
+        init();
+
+    </script>
+</body>
+</html>
