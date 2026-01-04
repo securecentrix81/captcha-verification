@@ -205,11 +205,12 @@
         });
 
         window.addEventListener('message', (event) => {
-          alert(JSON.stringify(event) + "\n" + JSON.stringify({type:event.type,statusText:event.statusText}))
-            if (event.type === "reload") {
-                statusText.textContent = event.statusText;
-            	SEQUENCE_LENGTH = event.sequence_length
-                PLAYBACK_SPEED = event.playback_speed
+            let data = event.data
+          alert(JSON.stringify(data))
+            if (data.type === "reload") {
+                statusText.textContent = data.statusText;
+            	SEQUENCE_LENGTH = data.sequence_length
+                PLAYBACK_SPEED = data.playback_speed
                 init();
             }
         });
