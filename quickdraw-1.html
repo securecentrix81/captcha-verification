@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quick! Draw!</title>
+    <style>
+        :root {
+            --primary-color: #ffc107;
+            --bg-color: #ffffff;
+            --text-color: #202124;
+            --canvas-bg: #f8f9fa;
+            --border-color: #3c4043;
+            --accent-blue: #4285f4;
+        }
+
+        * { box-sizing: border-box;}
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--primary-color);
+            margin: 0;
+            padding: 0;
+            /* Use dvh (dynamic viewport height) to account for mobile toolbars */
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            color: var(--text-color);
+        }
+
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            height: 100%;
+            padding: 10px;
+            gap: 10px;
+        }
+
+        header {
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        h1 {
+            margin: 5px 0;
+            font-size: 1.5rem;
+        }
+
+        #prompt-container {
+            background: white;
+            padding: 8px 20px;
+            border-radius: 50px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        #prompt-text {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        /* This container grows to fill all available space */
+        #canvas-area {
+            position: relative;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 0; /* Important for flex children */
+        }
+
+        #canvas-wrapper {
+            position: relative;
+            background: var(--canvas-bg);
+            border: 3px solid var(--border-color);
+            border-radius: 15px;
+            cursor: crosshair;
+            touch-action: none;
+            width: 100%;
+            height: 100%;
+            max-height: 400px; /* Limits size on large screens */
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 11px;
+        }
+
+        #ai-speech-bubble {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ffffff;
+            padding: 4px 8px;
+            border-radius: 20px;
+            border: 2px solid var(--border-color);
+            width: 80%;
+            text-align: center;
+            font-size: 0.7rem;
+            font-weight: 800;
+            display: none;
+            z-index: 5;
+            box-shadow: 0 4px 0px var(--border-color);
+        }
+
+        #timer {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            background: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 2px solid var(--border-color);
+            z-index: 10;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            padding-bottom: 5px;
+            flex-shrink: 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Overlay Styles */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+        }
+
+        .modal {
+            background: white;
+            color: var(--text-color);
+            padding: 25px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+        }
+
+        .hidden { display: none !important; }
+
+        #start-btn, #next-round-btn {
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+        }
+
+        @media (max-height: 500px) {
+            h1 { display: none; } /* Hide title on very short landscape phones */
+            #prompt-container { padding: 4px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="welcome-overlay" class="overlay">
+        <div class="modal">
+            <h1>Quick! Draw!</h1>
+          <p>Can a neural network learn to recognize doodling?</p>
+          <p>Help teach Saharsh 1.0 Mini to recognize images!</p>
+            <button id="start-btn">Got it!</button>
+        </div>
+    </div>
+
+    <div id="result-overlay" class="overlay hidden">
+        <div class="modal">
+            <h2>Time's Up!</h2>
+            <p>Drawing: <b id="result-target">...</b></p>
+            <p>AI guessed: <b id="result-guess">...</b></p>
+            <button id="next-round-btn">Next Round</button>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <header>
+            <h1>Quick! Draw!</h1>
+        </header>
+
+        <div id="prompt-container">
+            <span id="prompt-text">Loading...</span>
+        </div>
+
+        <div id="canvas-area">
+            <div id="canvas-wrapper">
+                <div id="timer">20</div>
+                <canvas id="paintCanvas"></canvas>
+                <div id="ai-speech-bubble">I see a... banana?</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="clear-btn">Clear</button>
+            <button id="skip-btn">Skip</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('paintCanvas');
+        const ctx = canvas.getContext('2d');
+        const canvasWrapper = document.getElementById('canvas-wrapper');
+        const timerDisplay = document.getElementById('timer');
+        const promptText = document.getElementById('prompt-text');
+        const speechBubble = document.getElementById('ai-speech-bubble');
+        const clearBtn = document.getElementById('clear-btn');
+        const skipBtn = document.getElementById('skip-btn');
+        const startBtn = document.getElementById('start-btn');
+        const nextRoundBtn = document.getElementById('next-round-btn');
+        const welcomeOverlay = document.getElementById('welcome-overlay');
+        const resultOverlay = document.getElementById('result-overlay');
+        const resultTarget = document.getElementById('result-target');
+        const resultGuess = document.getElementById('result-guess');
+
+        let drawing = false;
+        let drawingStarted = false;
+        let timeLeft = 20;
+        let timerInterval;
+        let currentTarget = "";
+        let guessInterval;
+        let lastAiGuess = "";
+
+        const objects = [
+        "cat", "dog", "house", "tree", "car", "bicycle", "sun", "moon", "star", "flower",
+        "slice of pizza", "hamburger", "laptop", "smartphone", "book", "glasses", "shoe", "hat",
+        "umbrella", "cloud", "mountain", "ocean", "fish", "bird", "elephant", "giraffe",
+        "airplane", "rocket", "guitar", "piano", "clock", "lamp", "chair", "table",
+        "cup", "bottle", "spoon", "fork", "knife", "bread", "apple", "banana", "carrot",
+        "cactus", "donut", "dragon", "face", "ice cream", "leaf", "mermaid", "octopus",
+        "owl", "palm tree", "parrot", "rabbit", "rainbow", "skull", "snail", "snake",
+        "spider", "strawberry", "swan", "tent", "tiger", "turtle", "whale", "zebra",
+        "volcano", "t-shirt", "socks", "shorts", "pants", "suit", "diamond", "square", "circle",
+        "triangle", "bridge", "tower", "castle", "sword", "shield", "crown", "key", "lock",
+        "hammer", "screwdriver", "wrench", "pliers", "saw", "ladder", "bucket", "broom",
+        "mop", "trash can", "mailbox", "telephone", "radio", "television", "camera",
+        "microscope", "telescope", "compass", "map", "globe", "anchor", "steering wheel",
+        "helmet", "trophy", "medal", "basketball", "football", "soccer ball", "tennis ball",
+        "golf club", "baseball bat", "hockey stick", "skate", "skateboard", "surfboard",
+        "snowboard", "ski", "campfire", "backpack", "binoculars", "flashlight",
+        "battery", "plug", "light bulb", "fan", "air conditioner", "refrigerator",
+        "microwave", "toaster", "oven", "stove", "sink", "bathtub", "toilet", "bed",
+        "pillow", "blanket", "dresser", "mirror", "rug", "curtain", "window", "door",
+        "hot dog", "french fries", "broccoli", "mushroom", "watermelon", "pineapple",
+        "grapes", "cherry", "pear", "cheese", "egg", "bacon", "pancake", "waffle",
+        "muffin", "cookie", "cake", "pie", "soda", "coffee", "tea", "milk",
+        "butterfly", "bee", "ant", "ladybug", "scorpion", "spider web", "crab", "lobster",
+        "shrimp", "dolphin", "shark", "penguin", "ostrich", "flamingo", "bat", "bear",
+        "wolf", "fox", "deer", "moose", "kangaroo", "koala", "panda", "monkey",
+        "lion", "leopard", "camel", "horse", "cow", "pig", "sheep", "goat", "chicken",
+        "duck", "turkey", "frog", "lizard", "dinosaur", "dragonfly", "caterpillar",
+        "sunflower", "rose", "tulip", "daisy", "pine tree", "willow tree", "bush", "grass",
+        "wheat", "corn", "mushroom", "acorn", "feather", "bone", "tooth", "brain",
+        "heart", "hand", "foot", "eye", "ear", "nose", "mouth", "tongue", "beard",
+        "mustache", "glasses", "sunglasses", "necklace", "ring", "watch", "bracelet",
+        "purse", "wallet", "briefcase", "backpack", "suitcase", "envelope", "paperclip",
+        "pencil", "pen", "marker", "crayon", "paintbrush", "palette", "easel",
+        "scissors", "tape", "glue", "ruler", "stapler", "calculator", "keyboard", "mouse",
+        "joystick", "headphones", "speaker", "microphone", "violin", "cello", "harp",
+        "trumpet", "saxophone", "flute", "drums", "tambourine", "accordion", "banjo",
+        "megaphone", "bell", "whistle", "hourglass", "compass", "magnet", "battery",
+        "diamond", "gold bar", "coin", "money", "credit card", "gift", "balloon",
+        "confetti", "fireworks", "candle", "torch", "lantern", "lighthouse", "windmill",
+        "water well", "fountain", "statue", "pyramid", "fence", "gate", "brick wall",
+        "chimney", "igloo", "tent", "barn", "hospital", "school", "church", "bank",
+        "store", "skyscraper", "factory", "stadium", "bridge", "tunnel", "road", "railroad",
+        "traffic light", "stop sign", "street lamp", "parking meter", "hydrant",
+        "truck", "bus", "van", "motorcycle", "scooter", "tractor", "crane", "bulldozer",
+        "forklift", "train", "subway", "helicopter", "hot air balloon", "parachute",
+        "spaceship", "ufo", "satellite", "asteroid", "comet", "galaxy", "telescope"
+      ];
+
+      const aiGuesses = [
+        "a very sad potato", "the concept of Tuesday", "a middle-aged accountant",
+        "a sentient toaster", "the smell of rain", "a confused penguin",
+        "your browser history", "a recursive loop", "a dusty bookshelf",
+        "an invisible sandwich", "the dark side of the moon", "a glitch in the matrix",
+        "a procrastinating squirrel", "the sound of one hand clapping",
+        "a broken escalator", "a jar of mayonnaise", "the wind", "a square circle",
+        "infinite sadness", "a happy little accident", "a bowl of sentient petunias",
+        "a tax audit", "the heat death of the universe", "a slightly burnt marshmallow",
+        "a box of nothing", "a really long weekend", "an existential crisis",
+        "a suspicious muffin", "a rubber duck with an attitude", "a lime-flavored shadow",
+        "a mime trapped in a box", "the feeling of a cold floor", "a forgotten password",
+        "a sneeze that wont come", "a low battery icon", "a captcha I cant solve",
+        "a 404 error", "a loading spinner", "a wifi signal with one bar",
+        "a cloud shaped like a taco", "a cat wearing a tiny hat", "a dog that thinks its a cat",
+        "a shark in a bathtub", "a cactus that needs a hug", "a dinosaur doing disco",
+        "a robot with a sense of humor", "a pizza with pineapple", "a sandwich with too much crust",
+        "a balloon that lost its string", "a ghost that's afraid of the dark",
+        "a collection of sentient dust bunnies", "a jazz-playing lobster",
+        "the mystery flavor of a lollipop", "a keyboard missing the 'Esc' key",
+        "a selfie of a black hole", "a penguin in a Hawaiian shirt",
+        "a giraffe in a convertible", "a very optimistic cucumber",
+        "the physical manifestation of a sigh", "a group of ants having a meeting",
+        "a spider who's afraid of heights", "a teapot full of secrets",
+        "a marshmallow at a campfire", "a snowman in July",
+        "a turtle who forgot where his shell is", "a squirrel hiding a diamond",
+        "a cloud that looks like a poodle", "a very polite vampire",
+        "a robot trying to understand love", "a sandwich that was dropped on the floor",
+        "a shadow that's bored of following you", "a mirror that shows your future self",
+        "a book that's tired of being read", "a pencil that only draws squiggles",
+        "a pair of socks that lost their partner", "a clock that runs backwards",
+        "a lightbulb with a bright idea", "a coffee mug that's always empty",
+        "a plant that wants to be a tree", "a star that's lost its twinkle",
+        "a moon made of green cheese", "a sun wearing sunglasses",
+        "a rainbow with only one color", "a raindrop that's afraid to fall",
+        "a snowflake that's unique, just like everyone else",
+        "a lightning bolt that's trying to be quiet", "a wind that whispers secrets",
+        "a mountain that wants to be a hill", "a river that's running late",
+        "an ocean that's feeling blue", "a desert that's thirsty for rain",
+        "a forest where the trees talk", "a cave that's full of echoes",
+        "a volcano that's about to pop", "a waterfall that's upside down",
+        "an island that's floating in the sky", "a planet that's made of candy",
+        "a galaxy in a marble", "a universe in a nutshell",
+        "a time machine that only goes to last Friday", "a teleporter that only works for hats",
+        "a shrink ray that only works on vegetables", "a laser that points at cats",
+        "a rocket ship powered by imagination", "a submarine that explores the bathtub",
+        "an airplane that flies through clouds of cotton candy",
+        "a train that travels to the edge of the world",
+        "a car that runs on sunshine and lollipops", "a bicycle built for two... elephants",
+        "a skateboard that glows in the dark", "a surfboard that rides on waves of sound", "Saharsh Gobinath", "Saharsh Gobinath", "Saharsh Gobinath", "Saharsh Gobinath", "Saharsh Gobinath"
+      ].concat(objects);
+
+        function resizeCanvas() {
+            // Get size of the wrapper (which is controlled by Flexbox)
+            const rect = canvasWrapper.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            
+            // Re-set styles after resize
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = '#202124';
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        // Delay slightly to ensure layout is calculated
+        setTimeout(resizeCanvas, 100);
+
+        function getXY(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function startDrawing(e) {
+            drawing = true;
+            if (!drawingStarted) {
+                drawingStarted = true;
+                startGuessing();
+            }
+            const pos = getXY(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+        }
+
+        function draw(e) {
+            if (!drawing) return;
+            const pos = getXY(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+        }
+
+        function stopDrawing() {
+            drawing = false;
+        }
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        window.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDrawing(e); }, {passive: false});
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); }, {passive: false});
+        canvas.addEventListener('touchend', stopDrawing);
+
+        function startGame() {
+            welcomeOverlay.classList.add('hidden');
+            nextRound();
+        }
+
+        function nextRound() {
+            resultOverlay.classList.add('hidden');
+            resizeCanvas(); 
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            currentTarget = objects[Math.floor(Math.random() * objects.length)];
+            promptText.innerText = "Draw: " + currentTarget;
+            
+            timeLeft = 20;
+            timerDisplay.innerText = timeLeft;
+            speechBubble.style.display = 'none';
+            drawingStarted = false;
+            lastAiGuess = "...";
+            
+            clearInterval(timerInterval);
+            clearInterval(guessInterval);
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.innerText = timeLeft;
+                if (timeLeft <= 0) endRound();
+            }, 1000);
+        }
+
+        function startGuessing() {
+            const updateGuess = () => {
+                const guess = aiGuesses[Math.floor(Math.random() * aiGuesses.length)];
+                lastAiGuess = guess;
+                speechBubble.innerText = `I see ${guess}?`;
+                speechBubble.style.display = 'block';
+            };
+            updateGuess();
+            guessInterval = setInterval(updateGuess, 2500);
+        }
+
+        function endRound() {
+            clearInterval(timerInterval);
+            clearInterval(guessInterval);
+            resultTarget.innerText = currentTarget;
+            resultGuess.innerText = lastAiGuess;
+            resultOverlay.classList.remove('hidden');
+        }
+
+        clearBtn.addEventListener('click', () => ctx.clearRect(0, 0, canvas.width, canvas.height));
+        skipBtn.addEventListener('click', nextRound);
+        startBtn.addEventListener('click', startGame);
+        nextRoundBtn.addEventListener('click', nextRound);
+
+    </script>
+</body>
+</html>
