@@ -426,8 +426,8 @@
           }
         }
         if (data.type === "simonsays-1") {
-          if (!data.isCorrect || (data.isComplete && data.fullSequence.length > 5)) document.getElementById("captcha-frame").contentWindow.postMessage({type: "simonsays-1", statusText: "That wasn't right. Try again.", sequence_length: 5, playback_speed: 500}, "*")
-          if (data.isComplete && data.fullSequence.length < 5) document.getElementById("captcha-frame").contentWindow.postMessage({type: "simonsays-1", statusText: "Great! Now let's try something a little bit harder...", sequence_length: 200, playback_speed: 50}, "*")
+          if (!data.isCorrect || (data.step >= data.fullSequence.length-1 && data.fullSequence.length > 5)) document.getElementById("captcha-frame").contentWindow.postMessage({statusText: "That wasn't right. Try again.", sequence_length: 5, playback_speed: 500}, "*")
+          if (data.step >= data.fullSequence.length-1 && data.fullSequence.length < 5) document.getElementById("captcha-frame").contentWindow.postMessage({statusText: "Great! Now let's try something a little bit harder...", sequence_length: 200, playback_speed: 50}, "*")
         }
       })
       function getIframeURL() {
