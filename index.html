@@ -250,6 +250,10 @@
         {
           weight: 1,
           data: "enterText-1"
+        },
+        {
+          weight: 1.3,
+          data: "simonsays-1"
         }
       ]
       let verifybtn = document.getElementById('verify-btn')
@@ -420,6 +424,10 @@
           } else {
             verifybtn.classList.add("disabled")
           }
+        }
+        if (data.type === "simonsays-1") {
+          if (!data.isCorrect || (data.isComplete && fullSequence.length > 5)) document.getElementById("captcha-frame").contentWindow.postMessage({type: "simonsays-1", statusText: "That wasn't right. Try again.", sequence_length: 5, playback_speed: 500}, "*")
+          if (data.isComplete && fullSequence.length < 5) document.getElementById("captcha-frame").contentWindow.postMessage({type: "simonsays-1", statusText: "Great! Now let's try something a little bit harder...", sequence_length: 200, playback_speed: 50}, "*")
         }
       })
       function getIframeURL() {
