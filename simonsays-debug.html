@@ -205,7 +205,7 @@
         });
 
         window.addEventListener('message', (event) => {
-          alert(JSON.stringify(event))
+          alert(JSON.stringify(event) + "\n" + JSON.stringify({type:event.type,statusText:event.statusText}))
             if (event.type === "reload") {
                 statusText.textContent = event.statusText;
             	SEQUENCE_LENGTH = event.sequence_length
