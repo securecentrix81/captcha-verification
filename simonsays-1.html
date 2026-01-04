@@ -205,12 +205,11 @@
         });
 
         window.addEventListener('message', (event) => {
-            if (event.type === "reload") {
-                statusText.textContent = event.statusText;
-            	SEQUENCE_LENGTH = event.sequence_length
-                PLAYBACK_SPEED = event.playback_speed
-                init();
-            }
+            let data = event.data
+            statusText.textContent = data.statusText;
+            SEQUENCE_LENGTH = data.sequence_length
+            PLAYBACK_SPEED = data.playback_speed
+            init();
         });
 
         // Start initial game
